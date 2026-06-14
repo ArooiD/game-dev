@@ -165,6 +165,10 @@ export class Game {
     for (const entity of this.entityManager.getAll()) {
       if (!entity.isActive) continue;
       
+      const unitPath = entity instanceof Unit && entity.path.length > 0 
+        ? entity.path.map(p => ({ x: p.x, y: p.y, z: 0 }))
+        : undefined;
+      
       this.renderer.addRenderItem({
         type: entity.type as any,
         worldPosition: entity.position,
@@ -177,6 +181,7 @@ export class Game {
         unitType: entity instanceof Unit ? entity.unitType : undefined,
         color: entity instanceof Unit ? entity.color : undefined,
         moveDirection: entity instanceof Unit ? entity.moveDirection || undefined : undefined,
+        path: unitPath,
       });
     }
     

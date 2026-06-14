@@ -162,11 +162,69 @@ export class Renderer {
   }
   
   /**
+   * Отрисовка пути юнита
+   */
+  private _renderUnitPath(_unitPos: { x: number; y: number }, item: RenderItem): void {
+    if (!item.pathPoints || item.pathPoints.length < 2) return;
+    
+    const firstPoint = item.pathPoints[0];
+    const firstScreen = IsoUtils.worldToScreen(
+      { x: firstPoint.x, y: firstPoint.y, z: 0 },
+      this.camera.position,
+      this._centerX,
+      this._centerY
+    );
+    
+    // Рисуем линию пути
+    this.ctx.strokeStyle = 'rgba(241, 196, 15, 0.6)'; // Полупрозрачный жёлтый
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([8, 4]);
+    
+    this.ctx.beginPath();
+    this.ctx.moveTo(firstScreen.x, firstScreen.y);
+    
+    for (let i = 1; i < item.pathPoints.length; i++) {
+      const point = item.pathPoints[i];
+      const screen = IsoUtils.worldToScreen(
+        { x: point.x, y: point.y, z: 0 },
+        this.camera.position,
+        this._centerX,
+        this._centerY
+      );
+      this.ctx.lineTo(screen.x, screen.y);
+    }
+    
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+    
+    // Рисуем точки пути
+    for (let i = 0; i < item.pathPoints.length; i++) {
+      const point = item.pathPoints[i];
+      const screen = IsoUtils.worldToScreen(
+        { x: point.x, y: point.y, z: 0 },
+        this.camera.position,
+        this._centerX,
+        this._centerY
+      );
+      
+      // Точка пути
+      const dotSize = 4 * this.camera.zoom;
+      this.ctx.fillStyle = i === item.pathPoints.length - 1 ? '#e74c3c' : '#f1c40f'; // Красная последняя точка
+      this.ctx.beginPath();
+      this.ctx.arc(screen.x, screen.y, dotSize, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+  }
+  
+  /**
    * Отрисовка юнита
    */
   private _renderUnit(pos: { x: number; y: number }, item: RenderItem): void {
     const size = 24 * this.camera.zoom;
     const height = 35 * this.camera.zoom;
+    
+    // Сначала рисуем путь (под юнитом)
+    this._renderUnitPath(pos, item);
     
     // Тень
     this.ctx.beginPath();
@@ -215,7 +273,7 @@ export class Renderer {
       this.ctx.fillRect(pos.x - barWidth / 2, pos.y - height - 8, barWidth * healthPercent, barHeight);
     }
     
-    // Стрелка направления движения
+    // Стрелка направления движения (поверх всего)
     if (item.moveDirection) {
       const arrowLength = 20 * this.camera.zoom;
       const arrowOffset = height / 2 + 10 * this.camera.zoom;
@@ -388,4 +446,5 @@ export interface RenderItem {
   unitType?: string;
   color?: { r: number; g: number; b: number; a: number };
   moveDirection?: { x: number; y: number };
+  path?: WorldPosition[];
 }
