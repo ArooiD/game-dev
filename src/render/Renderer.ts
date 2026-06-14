@@ -229,8 +229,8 @@ export class Renderer {
    * Отрисовка юнита
    */
   private _renderUnit(pos: { x: number; y: number }, item: RenderItem): void {
-    const size = 6 * this.camera.zoom;  // Было 24, уменьшил в 4 раза
-    const height = 9 * this.camera.zoom;  // Было 35, уменьшил в ~4 раза
+    const size = 24 * this.camera.zoom;  // Вернул оригинальный размер
+    const height = 35 * this.camera.zoom;
     
     // Сначала рисуем путь (под юнитом)
     this._renderUnitPath(pos, item);
@@ -253,12 +253,12 @@ export class Renderer {
     
     // Обводка
     this.ctx.strokeStyle = '#2c3e50';
-    this.ctx.lineWidth = 1;
+    this.ctx.lineWidth = 2;
     this.ctx.strokeRect(pos.x - size / 2, pos.y - height, size, height);
     
-    // Иконка типа юнита (портрет) - уменьшаем шрифт
+    // Иконка типа юнита (портрет)
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = `bold ${4 * this.camera.zoom}px Arial`;  // Было 14
+    this.ctx.font = `bold ${14 * this.camera.zoom}px Arial`;
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     
@@ -273,19 +273,19 @@ export class Renderer {
     if (item.health !== undefined && item.maxHealth !== undefined) {
       const healthPercent = item.health / item.maxHealth;
       const barWidth = size;
-      const barHeight = 2;  // Было 4
+      const barHeight = 4;
       
       this.ctx.fillStyle = '#333';
-      this.ctx.fillRect(pos.x - barWidth / 2, pos.y - height - 4, barWidth, barHeight);  // Было -8
+      this.ctx.fillRect(pos.x - barWidth / 2, pos.y - height - 8, barWidth, barHeight);
       
       this.ctx.fillStyle = healthPercent > 0.5 ? '#2ecc71' : healthPercent > 0.25 ? '#f39c12' : '#e74c3c';
-      this.ctx.fillRect(pos.x - barWidth / 2, pos.y - height - 4, barWidth * healthPercent, barHeight);
+      this.ctx.fillRect(pos.x - barWidth / 2, pos.y - height - 8, barWidth * healthPercent, barHeight);
     }
     
     // Стрелка направления движения (поверх всего)
     if (item.moveDirection) {
-      const arrowLength = 5 * this.camera.zoom;  // Было 20
-      const arrowOffset = height / 2 + 3 * this.camera.zoom;  // Было 10
+      const arrowLength = 20 * this.camera.zoom;
+      const arrowOffset = height / 2 + 10 * this.camera.zoom;
       
       // Преобразуем мировое направление в экранный вектор
       // В изометрии: экранная X = мировая (X - Y), экранная Y = мировая (X + Y)
@@ -304,7 +304,7 @@ export class Renderer {
         
         // Стрелка
         this.ctx.strokeStyle = '#f1c40f';
-        this.ctx.lineWidth = 2;  // Было 3
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -312,7 +312,7 @@ export class Renderer {
         
         // Наконечник стрелки
         const angle = Math.atan2(dirY, dirX);
-        const headLength = 2 * this.camera.zoom;  // Было 8
+        const headLength = 8 * this.camera.zoom;
         this.ctx.fillStyle = '#f1c40f';
         this.ctx.beginPath();
         this.ctx.moveTo(endX, endY);

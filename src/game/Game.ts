@@ -450,8 +450,8 @@ export class Game {
       const unit = new Unit(
         `unit_${i}`,
         unitTypes[i],
-        { x: centerX + i * 0.5, y: centerY, z: 0 },  // Уменьшил расстояние между юнитами
-        { width: 0.25, height: 0.25, depth: 0.25 },  // Уменьшил размер в 4 раза (было 1)
+        { x: centerX + i * 2, y: centerY, z: 0 },  // Вернул расстояние
+        { width: 1, height: 1, depth: 1 },  // Вернул оригинальный размер
         colors[i]
       );
       unit.addTag('player1');

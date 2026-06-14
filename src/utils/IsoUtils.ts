@@ -11,9 +11,16 @@ export class IsoUtils {
   // Угол изометрии (2:1 соотношение)
   static readonly ISO_ANGLE = Math.atan(0.5);
   
-  // Ширина и высота изометрического тайла
-  static readonly TILE_WIDTH = 16;  // Было 64, уменьшил в 4 раза
-  static readonly TILE_HEIGHT = 8;  // Было 32, уменьшил в 4 раза
+  // Виртуальный размер тайла для логики (мелкая сетка)
+  static readonly LOGIC_TILE_WIDTH = 1.0;  // Базовая единица для логики
+  static readonly LOGIC_TILE_HEIGHT = 1.0;
+  
+  // Визуальный размер тайла для отрисовки (крупные тайлы)
+  static readonly TILE_WIDTH = 64;  // Вернул оригинальный размер
+  static readonly TILE_HEIGHT = 32;
+  
+  // Масштаб отрисовки относительно логики
+  static readonly RENDER_SCALE = IsoUtils.TILE_WIDTH / IsoUtils.LOGIC_TILE_WIDTH;
   
   /**
    * Преобразует координаты сетки в экранные координаты
