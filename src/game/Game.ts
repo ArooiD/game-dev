@@ -9,6 +9,7 @@ import { EntityManager } from '../core/EntityManager.js';
 import { EntityType, Color, Resources, UnitType, WorldPosition } from '../types.js';
 import { Unit } from '../entities/Unit.js';
 import { TileMap } from '../system/TileMap.js';
+import { UIManager } from '../ui/UIManager.js';
 
 export class Game {
   gameLoop: GameLoop;
@@ -35,6 +36,9 @@ export class Game {
   private _mapHeight: number = 32;
   private _tileMap: TileMap | null = null;
   
+  // UI
+  private _uiManager: UIManager | null = null;
+  
   // Путь для визуализации
   private _visiblePath: WorldPosition[] = [];
   
@@ -53,6 +57,7 @@ export class Game {
     
     this.renderer = new Renderer(canvas);
     this.input = new InputHandler();
+    this._uiManager = new UIManager(this.renderer);
     
     this._setupCallbacks();
   }
@@ -251,24 +256,16 @@ export class Game {
    * Отрисовка UI
    */
   private _renderUI(): void {
+    // Рендерим FPS вручную
     const ctx = this.renderer.ctx;
-    
-    // FPS
     ctx.fillStyle = '#fff';
     ctx.font = '14px Arial';
     ctx.fillText(`FPS: ${this.gameLoop.fps}`, 10, 20);
     
-    // Ресурсы
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillText(`Food: ${this._resources.food}`, 10, 40);
-    ctx.fillText(`Wood: ${this._resources.wood}`, 10, 55);
-    ctx.fillText(`Iron: ${this._resources.iron}`, 10, 70);
-    ctx.fillText(`Gold: ${this._resources.gold}`, 10, 85);
-    ctx.fillText(`Population: ${this._resources.population}/${this._resources.populationLimit}`, 10, 100);
-    
-    // Выделенные сущности
-    ctx.fillStyle = '#3498db';
-    ctx.fillText(`Selected: ${this._selectedEntities.size}`, 10, 120);
+    // Рендерим остальной UI через UIManager
+    if (this._uiManager) {
+      this._uiManager.render(this._selectedEntities);
+    }
   }
   
   /**
