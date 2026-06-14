@@ -1,19 +1,18 @@
-/**
- * Точка входа в приложение
- */
+import Phaser from 'phaser';
+import './styles.css';
+import { BattleScene } from './scenes/BattleScene';
 
-import { Game } from './game/Game.js';
+const config: Phaser.Types.Core.GameConfig = {
+  type: Phaser.AUTO,
+  parent: 'game-container',
+  backgroundColor: '#18212f',
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
+  scene: [BattleScene],
+};
 
-// Создаем и запускаем игру
-const game = new Game();
-game.init();
-game.start();
-
-console.log('Historical RTS Prototype v0.1.0');
-console.log('Controls:');
-console.log('  Left click + drag - Select units');
-console.log('  Right click - Move command');
-console.log('  Mouse wheel - Zoom');
-console.log('  Arrow keys / Edge scroll - Move camera');
-console.log('  ESC - Deselect');
-console.log('  Space - Pause/Resume');
+new Phaser.Game(config);
