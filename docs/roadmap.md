@@ -3,12 +3,12 @@
 ## Этап 1 — Технический каркас
 - Vite
 - TypeScript
-- Canvas renderer
+- Изометрический Canvas renderer
 - Game loop
-- Camera
+- Изометрическая камера
 - Input system
 - Entity system
-- Tile/terrain map
+- Изометрический tile/terrain map
 
 ## Этап 2 — Микроконтроль
 - Выделение рамкой
