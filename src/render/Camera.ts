@@ -99,25 +99,32 @@ export class Camera {
    * Преобразует экранные координаты в мировые
    */
   screenToWorld(screenX: number, screenY: number, centerX: number, centerY: number): Vector2 {
-    const adjustedX = (screenX - centerX) / this.zoom + this.position.x;
-    const adjustedY = (screenY - centerY) / this.zoom + this.position.y;
+    // Сначала убираем зум и центрирование
+    const unzoomedX = (screenX - centerX) / this.zoom + centerX;
+    const unzoomedY = (screenY - centerY) / this.zoom + centerY;
     
-    return {
-      x: adjustedX,
-      y: adjustedY,
-    };
+    // Затем применяем обратное смещение камеры
+    const isoX = unzoomedX - centerX + this.position.x;
+    const isoY = unzoomedY - centerY + this.position.y;
+    
+    // Преобразуем изометрические координаты в сетку
+    const gridPos = IsoUtils.screenToGrid(isoX, isoY);
+    
+    return gridPos;
   }
   
   /**
    * Преобразует мировые координаты в экранные
    */
   worldToScreen(worldX: number, worldY: number, centerX: number, centerY: number): Vector2 {
-    const isoPos = IsoUtils.gridToScreen(worldX, worldY);
-    
-    return {
-      x: (isoPos.x - this.position.x) * this.zoom + centerX,
-      y: (isoPos.y - this.position.y) * this.zoom + centerY,
-    };
+    // Используем IsoUtils.worldToScreen с z=0
+    return IsoUtils.worldToScreen(
+      { x: worldX, y: worldY, z: 0 },
+      this.position,
+      centerX,
+      centerY,
+      this.zoom
+    );
   }
   
   /**

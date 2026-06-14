@@ -110,12 +110,9 @@ export class Renderer {
       item.worldPosition,
       this.camera.position,
       this._centerX,
-      this._centerY
+      this._centerY,
+      this.camera.zoom
     );
-    
-    // Применяем зум
-    screenPos.x = (screenPos.x - this._centerX) * this.camera.zoom + this._centerX;
-    screenPos.y = (screenPos.y - this._centerY) * this.camera.zoom + this._centerY;
     
     this.ctx.save();
     

@@ -44,18 +44,20 @@ export class IsoUtils {
   }
   
   /**
-   * Преобразует мировые координаты в экранные с учётом камеры
+   * Преобразует мировые координаты в экранные с учётом камеры и зума
    * @param worldPos - Мировая позиция
    * @param cameraPos - Позиция камеры
    * @param centerX - Центр экрана по X
    * @param centerY - Центр экрана по Y
+   * @param zoom - Масштаб камеры (по умолчанию 1)
    * @returns Экранная позиция
    */
   static worldToScreen(
     worldPos: WorldPosition,
     cameraPos: Vector2,
     centerX: number,
-    centerY: number
+    centerY: number,
+    zoom: number = 1
   ): Vector2 {
     const isoPos = IsoUtils.gridToScreen(worldPos.x, worldPos.y);
     
@@ -66,9 +68,9 @@ export class IsoUtils {
     isoPos.x -= cameraPos.x;
     isoPos.y -= cameraPos.y;
     
-    // Центрируем на экране
-    isoPos.x += centerX;
-    isoPos.y += centerY;
+    // Применяем зум
+    isoPos.x = (isoPos.x - centerX) * zoom + centerX;
+    isoPos.y = (isoPos.y - centerY) * zoom + centerY;
     
     return isoPos;
   }
