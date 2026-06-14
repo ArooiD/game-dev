@@ -22,7 +22,7 @@ export type PortraitPanelState = {
   portraits: PortraitItem[];
   selectedBuilding: Building | null;
   placementLabel: string | null;
-  actions: CommandAction[];
+  actions?: CommandAction[];
   onAction?: (action: CommandAction) => void;
 };
 
@@ -36,6 +36,7 @@ export class PortraitPanel {
   }
 
   render(x: number, y: number, state: PortraitPanelState): void {
+    const actions = state.actions ?? [];
     this.graphics.clear();
     this.clearTexts();
     this.clearZones();
@@ -44,7 +45,7 @@ export class PortraitPanel {
 
     if (state.portraits.length === 0) {
       this.renderEmpty(x, y, state.placementLabel);
-      this.renderActions(x + 314, y + 18, state.actions, state.onAction);
+      this.renderActions(x + 314, y + 18, actions, state.onAction);
       return;
     }
 
@@ -54,7 +55,7 @@ export class PortraitPanel {
       this.renderPortraitStrip(x + 14, y + 14, state.portraits);
     }
 
-    this.renderActions(x + 314, y + 18, state.actions, state.onAction);
+    this.renderActions(x + 314, y + 18, actions, state.onAction);
     this.addText(x + 500, y + 24, state.placementLabel ? `Размещение:\n${state.placementLabel}` : 'Иконки\nкоманд', '13px', '#facc15');
   }
 
@@ -113,7 +114,6 @@ export class PortraitPanel {
 
   private drawActionIcon(x: number, y: number, icon: ActionIconKind): void {
     this.graphics.lineStyle(3, 0xe5e7eb, 0.9);
-    this.graphics.fillStyle(0xdc2626, 1);
     if (icon === 'house' || icon === 'barracks' || icon === 'stable' || icon === 'foundry') {
       const color = icon === 'foundry' ? 0x64748b : icon === 'stable' ? 0x92400e : icon === 'barracks' ? 0x78350f : 0x9a6b39;
       this.graphics.fillStyle(color, 1).fillRect(x - 12, y - 2, 24, 16);
