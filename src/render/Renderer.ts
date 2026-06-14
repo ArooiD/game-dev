@@ -168,8 +168,8 @@ export class Renderer {
    * Отрисовка юнита
    */
   private _renderUnit(pos: { x: number; y: number }, item: RenderItem): void {
-    const size = 20 * this.camera.zoom;
-    const height = 30 * this.camera.zoom;
+    const size = 24 * this.camera.zoom;
+    const height = 35 * this.camera.zoom;
     
     // Тень
     this.ctx.beginPath();
@@ -177,14 +177,33 @@ export class Renderer {
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     this.ctx.fill();
     
-    // Тело юнита
-    this.ctx.fillStyle = '#3498db';
+    // Цвет юнита
+    let unitColor = '#3498db';
+    if (item.color) {
+      unitColor = `rgb(${item.color.r}, ${item.color.g}, ${item.color.b})`;
+    }
+    
+    // Тело юнита (портрет)
+    this.ctx.fillStyle = unitColor;
     this.ctx.fillRect(pos.x - size / 2, pos.y - height, size, height);
     
     // Обводка
     this.ctx.strokeStyle = '#2c3e50';
     this.ctx.lineWidth = 2;
     this.ctx.strokeRect(pos.x - size / 2, pos.y - height, size, height);
+    
+    // Иконка типа юнита (портрет)
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = `bold ${14 * this.camera.zoom}px Arial`;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    let icon = '⚔️'; // infantry по умолчанию
+    if (item.unitType === 'archer') icon = '🏹';
+    else if (item.unitType === 'cavalry') icon = '🐎';
+    else if (item.unitType === 'artillery') icon = '💣';
+    
+    this.ctx.fillText(icon, pos.x, pos.y - height / 2);
     
     // Индикатор здоровья (если есть)
     if (item.health !== undefined && item.maxHealth !== undefined) {
@@ -322,4 +341,6 @@ export interface RenderItem {
   height?: number;
   pathPoints?: WorldPosition[];
   entityType?: EntityType;
+  unitType?: string;
+  color?: { r: number; g: number; b: number; a: number };
 }

@@ -174,6 +174,8 @@ export class Game {
           (entity.getComponent('health') as any).maxHealth : undefined,
         width: entity.dimensions.width,
         height: entity.dimensions.height,
+        unitType: entity instanceof Unit ? entity.unitType : undefined,
+        color: entity instanceof Unit ? entity.color : undefined,
       });
     }
     
@@ -352,12 +354,6 @@ export class Game {
     const targetX = Math.floor(worldPos.x);
     const targetY = Math.floor(worldPos.y);
     
-    // Проверяем, можно ли ходить туда
-    if (this._tileMap && !this._tileMap.isWalkable(targetX, targetY)) {
-      console.log('Cannot move to non-walkable tile');
-      return;
-    }
-    
     // Отправляем команду всем выделенным юнитам
     for (const unit of this._selectedEntities) {
       unit.moveTo(targetX, targetY);
@@ -367,6 +363,9 @@ export class Game {
     const firstUnit = Array.from(this._selectedEntities)[0];
     if (firstUnit && firstUnit.path.length > 0) {
       this._visiblePath = [...firstUnit.path];
+      console.log('Path found:', firstUnit.path.length, 'waypoints');
+    } else {
+      console.log('No path found, moving directly');
     }
     
     console.log('Move command to:', targetX, targetY, 'units:', this._selectedEntities.size);
@@ -424,7 +423,10 @@ export class Game {
    * Создаёт тестовую сцену
    */
   private _createTestScene(): void {
-    // Создаем несколько юнитов
+    // Создаем несколько юнитов в центре карты (безопасная зона)
+    const centerX = Math.floor(this._mapWidth / 2);
+    const centerY = Math.floor(this._mapHeight / 2);
+    
     const colors: Color[] = [
       { r: 52, g: 152, b: 219, a: 1 },
       { r: 39, g: 174, b: 96, a: 1 },
@@ -437,7 +439,7 @@ export class Game {
       const unit = new Unit(
         `unit_${i}`,
         unitTypes[i],
-        { x: 10 + i * 2, y: 10, z: 0 },
+        { x: centerX + i * 2, y: centerY, z: 0 },
         { width: 1, height: 1, depth: 1 },
         colors[i]
       );
