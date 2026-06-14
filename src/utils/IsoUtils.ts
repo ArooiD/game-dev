@@ -1,62 +1,36 @@
 /**
- * Утилиты для изометрического преобразования координат
+ * Утилиты для преобразования координат
  * 
- * Изометрическая проекция использует угол 2:1 (примерно 26.565°)
- * для создания псевдо-3D эффекта
+ * Простой вид сверху (top-down) без изометрии
  */
 
 import { Vector2, WorldPosition } from '../types.js';
 
 export class IsoUtils {
-  // Угол изометрии (2:1 соотношение)
-  static readonly ISO_ANGLE = Math.atan(0.5);
-  
-  // Виртуальный размер тайла для логики (мелкая сетка)
-  static readonly LOGIC_TILE_WIDTH = 1.0;  // Базовая единица для логики
-  static readonly LOGIC_TILE_HEIGHT = 1.0;
-  
-  // Визуальный размер тайла для отрисовки (крупные тайлы)
-  static readonly TILE_WIDTH = 64;  // Вернул оригинальный размер
-  static readonly TILE_HEIGHT = 32;
-  
-  // Масштаб отрисовки относительно логики
-  static readonly RENDER_SCALE = IsoUtils.TILE_WIDTH / IsoUtils.LOGIC_TILE_WIDTH;
+  // Размер тайла для отрисовки (квадратный для top-down)
+  static readonly TILE_WIDTH = 64;
+  static readonly TILE_HEIGHT = 64;
   
   /**
    * Преобразует координаты сетки в экранные координаты
-   * @param gridX - X координата в сетке
-   * @param gridY - Y координата в сетке
-   * @returns Экранная позиция
    */
   static gridToScreen(gridX: number, gridY: number): Vector2 {
-    const x = (gridX - gridY) * (IsoUtils.TILE_WIDTH / 2);
-    const y = (gridX + gridY) * (IsoUtils.TILE_HEIGHT / 2);
+    const x = gridX * IsoUtils.TILE_WIDTH;
+    const y = gridY * IsoUtils.TILE_HEIGHT;
     return { x, y };
   }
   
   /**
    * Преобразует экранные координаты в координаты сетки
-   * @param screenX - X координата на экране
-   * @param screenY - Y координата на экране
-   * @returns Позиция в сетке
    */
   static screenToGrid(screenX: number, screenY: number): Vector2 {
-    const halfTileWidth = IsoUtils.TILE_WIDTH / 2;
-    const halfTileHeight = IsoUtils.TILE_HEIGHT / 2;
-    
-    const gridY = (screenY / halfTileHeight - screenX / halfTileWidth) / 2;
-    const gridX = (screenY / halfTileHeight + screenX / halfTileWidth) / 2;
-    
+    const gridX = screenX / IsoUtils.TILE_WIDTH;
+    const gridY = screenY / IsoUtils.TILE_HEIGHT;
     return { x: gridX, y: gridY };
   }
   
   /**
    * Преобразует мировые координаты в экранные с учётом камеры
-   * @param worldPos - Мировая позиция
-   * @param cameraPos - Позиция камеры
-   * @param centerX - Центр экрана по X
-   * @param centerY - Центр экрана по Y
-   * @returns Экранная позиция
    */
   static worldToScreen(
     worldPos: WorldPosition,
@@ -64,62 +38,40 @@ export class IsoUtils {
     centerX: number,
     centerY: number
   ): Vector2 {
-    const isoPos = IsoUtils.gridToScreen(worldPos.x, worldPos.y);
-    
-    // Добавляем высоту (Z-координату)
-    isoPos.y -= worldPos.z;
-    
-    // Применяем смещение камеры
-    isoPos.x -= cameraPos.x;
-    isoPos.y -= cameraPos.y;
-    
-    // Центрируем на экране
-    isoPos.x += centerX;
-    isoPos.y += centerY;
-    
-    return isoPos;
+    const screenX = (worldPos.x - cameraPos.x) * IsoUtils.TILE_WIDTH + centerX;
+    const screenY = (worldPos.y - cameraPos.y) * IsoUtils.TILE_HEIGHT + centerY;
+    return { x: screenX, y: screenY };
   }
   
   /**
-   * Получает глубину тайла для правильного сортирования (z-index)
-   * @param gridX - X координата в сетке
-   * @param gridY - Y координата в сетке
-   * @param z - Высота
-   * @returns Значение для сортировки
+   * Получает глубину для сортирования (для top-down просто Y координата)
    */
-  static getDepth(gridX: number, gridY: number, z: number = 0): number {
-    return gridX + gridY - z;
+  static getDepth(_gridX: number, gridY: number, _z: number = 0): number {
+    return gridY;
   }
   
   /**
-   * Проверяет, находится ли точка внутри изометрического тайла
-   * @param screenX - Экранная X
-   * @param screenY - Экранная Y
-   * @param tileX - X тайла в сетке
-   * @param tileY - Y тайла в сетке
-   * @returns true если точка внутри тайла
+   * Проверяет, находится ли точка внутри тайла
    */
   static isPointInTile(screenX: number, screenY: number, tileX: number, tileY: number): boolean {
-    const center = IsoUtils.gridToScreen(tileX, tileY);
-    const halfWidth = IsoUtils.TILE_WIDTH / 2;
-    const halfHeight = IsoUtils.TILE_HEIGHT / 2;
+    const startX = tileX * IsoUtils.TILE_WIDTH;
+    const startY = tileY * IsoUtils.TILE_HEIGHT;
     
-    const dx = screenX - center.x;
-    const dy = screenY - center.y;
-    
-    // Проверка с использованием ромбовидной формы
-    return Math.abs(dx / halfWidth) + Math.abs(dy / halfHeight) <= 1;
+    return (
+      screenX >= startX &&
+      screenX < startX + IsoUtils.TILE_WIDTH &&
+      screenY >= startY &&
+      screenY < startY + IsoUtils.TILE_HEIGHT
+    );
   }
   
   /**
-   * Получает размер изометрической карты в пикселях
-   * @param gridWidth - Ширина карты в тайлах
-   * @param gridHeight - Высота карты в тайлах
-   * @returns Размеры в пикселях
+   * Получает размер карты в пикселях
    */
   static getMapSize(gridWidth: number, gridHeight: number): Vector2 {
-    const width = (gridWidth + gridHeight) * (IsoUtils.TILE_WIDTH / 2);
-    const height = (gridWidth + gridHeight) * (IsoUtils.TILE_HEIGHT / 2);
-    return { x: width, y: height };
+    return {
+      x: gridWidth * IsoUtils.TILE_WIDTH,
+      y: gridHeight * IsoUtils.TILE_HEIGHT
+    };
   }
 }
