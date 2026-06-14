@@ -28,35 +28,40 @@ export type PortraitPanelState = {
 export class PortraitPanel {
   private graphics: Phaser.GameObjects.Graphics;
   private texts: Phaser.GameObjects.Text[] = [];
-  private zones: Phaser.GameObjects.Zone[] = [];
   private hoveredAction: CommandAction | null = null;
+  private actionRects: { rect: Phaser.Geom.Rectangle; action: CommandAction }[] = [];
+  private onAction?: (action: CommandAction) => void;
+  private isPointerDownOnAction = false;
 
   constructor(private scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(3300);
+    scene.input.on('pointermove', this.handlePointerMove, this);
+    scene.input.on('pointerdown', this.handlePointerDown, this);
+    scene.input.on('pointerup', this.handlePointerUp, this);
   }
 
   render(x: number, y: number, state: PortraitPanelState): void {
     const actions = state.actions ?? [];
+    this.onAction = state.onAction;
     this.graphics.clear();
     this.clearTexts();
-    this.clearZones();
+    this.actionRects = [];
     this.graphics.fillStyle(0x120b07, 0.96).fillRoundedRect(x, y, 620, 136, 10);
     this.graphics.lineStyle(3, 0x8b6f3e, 1).strokeRoundedRect(x, y, 620, 136, 10);
 
     if (state.portraits.length === 0) {
       this.renderEmpty(x, y, state.placementLabel);
-      this.renderActions(x + 314, y + 18, actions, state.onAction);
+      this.renderActions(x + 314, y + 18, actions);
+      this.updateHoveredActionFromPointer(this.scene.input.activePointer);
       this.renderActionInfo(x + 468, y + 18, state.placementLabel);
       return;
     }
 
-    if (state.portraits.length === 1) {
-      this.renderLargePortrait(x + 14, y + 12, state.portraits[0]);
-    } else {
-      this.renderPortraitStrip(x + 14, y + 14, state.portraits);
-    }
+    if (state.portraits.length === 1) this.renderLargePortrait(x + 14, y + 12, state.portraits[0]);
+    else this.renderPortraitStrip(x + 14, y + 14, state.portraits);
 
-    this.renderActions(x + 314, y + 18, actions, state.onAction);
+    this.renderActions(x + 314, y + 18, actions);
+    this.updateHoveredActionFromPointer(this.scene.input.activePointer);
     this.renderActionInfo(x + 468, y + 18, state.placementLabel);
   }
 
@@ -107,7 +112,7 @@ export class PortraitPanel {
     });
   }
 
-  private renderActions(x: number, y: number, actions: CommandAction[], onAction?: (action: CommandAction) => void): void {
+  private renderActions(x: number, y: number, actions: CommandAction[]): void {
     const size = 42;
     const gap = 8;
     actions.slice(0, 9).forEach((action, index) => {
@@ -115,75 +120,43 @@ export class PortraitPanel {
       const row = Math.floor(index / 3);
       const ax = x + col * (size + gap);
       const ay = y + row * (size + gap);
+      this.actionRects.push({ rect: new Phaser.Geom.Rectangle(ax, ay, size, size), action });
       this.graphics.fillStyle(0x08090d, 1).fillRect(ax, ay, size, size);
-      this.graphics.lineStyle(2, 0x49634c, 1).strokeRect(ax, ay, size, size);
+      this.graphics.lineStyle(2, this.hoveredAction?.id === action.id ? 0xfacc15 : 0x49634c, 1).strokeRect(ax, ay, size, size);
       this.drawActionIcon(ax + size / 2, ay + size / 2, action.icon);
       this.addText(ax + 4, ay + 2, action.hotkey, '10px', '#facc15');
-      const zone = this.scene.add.zone(ax, ay, size, size).setOrigin(0).setScrollFactor(0).setDepth(20000).setInteractive({ useHandCursor: true });
-      zone.on('pointerover', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); this.hoveredAction = action; });
-      zone.on('pointermove', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); this.hoveredAction = action; });
-      zone.on('pointerout', () => { this.hoveredAction = null; });
-      zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); onAction?.(action); });
-      zone.on('pointerup', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); });
-      this.zones.push(zone);
     });
   }
 
+  private handlePointerMove(pointer: Phaser.Input.Pointer): void { this.updateHoveredActionFromPointer(pointer); }
+  private handlePointerDown(pointer: Phaser.Input.Pointer): void { const action = this.getActionAtPointer(pointer); this.isPointerDownOnAction = Boolean(action); if (action) this.hoveredAction = action; }
+  private handlePointerUp(pointer: Phaser.Input.Pointer): void { const action = this.getActionAtPointer(pointer); if (this.isPointerDownOnAction && action) this.onAction?.(action); this.isPointerDownOnAction = false; }
+  private updateHoveredActionFromPointer(pointer: Phaser.Input.Pointer): void { this.hoveredAction = this.getActionAtPointer(pointer); }
+  private getActionAtPointer(pointer: Phaser.Input.Pointer): CommandAction | null { return this.actionRects.find(({ rect }) => Phaser.Geom.Rectangle.Contains(rect, pointer.x, pointer.y))?.action ?? null; }
+
   private drawActionIcon(x: number, y: number, icon: ActionIconKind): void {
     this.graphics.lineStyle(3, 0xe5e7eb, 0.9);
-    if (icon === 'house' || icon === 'barracks' || icon === 'stable' || icon === 'foundry') {
-      const color = icon === 'foundry' ? 0x64748b : icon === 'stable' ? 0x92400e : icon === 'barracks' ? 0x78350f : 0x9a6b39;
-      this.graphics.fillStyle(color, 1).fillRect(x - 12, y - 2, 24, 16);
-      this.graphics.fillStyle(0x3a2413, 1).fillTriangle(x - 16, y - 2, x, y - 16, x + 16, y - 2);
-      return;
-    }
+    if (icon === 'house' || icon === 'barracks' || icon === 'stable' || icon === 'foundry') { const color = icon === 'foundry' ? 0x64748b : icon === 'stable' ? 0x92400e : icon === 'barracks' ? 0x78350f : 0x9a6b39; this.graphics.fillStyle(color, 1).fillRect(x - 12, y - 2, 24, 16); this.graphics.fillStyle(0x3a2413, 1).fillTriangle(x - 16, y - 2, x, y - 16, x + 16, y - 2); return; }
     if (icon === 'repair' || icon === 'hammer') { this.graphics.lineBetween(x - 12, y + 12, x + 10, y - 10); this.graphics.lineBetween(x + 5, y - 14, x + 15, y - 4); return; }
     if (icon === 'gather') { this.graphics.fillStyle(0x22c55e, 1).fillCircle(x - 7, y, 7); this.graphics.fillStyle(0x92400e, 1).fillRect(x + 4, y - 10, 7, 20); return; }
     if (icon === 'stop') { this.graphics.fillStyle(0xdc2626, 1).fillRect(x - 11, y - 11, 22, 22); return; }
     if (icon === 'attack') { this.graphics.lineBetween(x - 12, y + 12, x + 12, y - 12); this.graphics.lineBetween(x + 4, y - 12, x + 12, y - 12); this.graphics.lineBetween(x + 12, y - 12, x + 12, y - 4); return; }
     if (icon === 'hold') { this.graphics.fillStyle(0x94a3b8, 1).fillTriangle(x, y - 15, x + 14, y + 10, x - 14, y + 10); return; }
-    if (icon === 'worker' || icon === 'soldier' || icon === 'specialist' || icon === 'cavalry' || icon === 'artillery') {
-      const color = icon === 'worker' ? 0x22c55e : icon === 'soldier' ? 0x2563eb : icon === 'specialist' ? 0xa855f7 : icon === 'cavalry' ? 0xf59e0b : 0x64748b;
-      this.graphics.fillStyle(color, 1).fillCircle(x, y - 7, 6);
-      this.graphics.fillRoundedRect(x - 9, y, 18, 17, 4);
-    }
+    if (icon === 'worker' || icon === 'soldier' || icon === 'specialist' || icon === 'cavalry' || icon === 'artillery') { const color = icon === 'worker' ? 0x22c55e : icon === 'soldier' ? 0x2563eb : icon === 'specialist' ? 0xa855f7 : icon === 'cavalry' ? 0xf59e0b : 0x64748b; this.graphics.fillStyle(color, 1).fillCircle(x, y - 7, 6); this.graphics.fillRoundedRect(x - 9, y, 18, 17, 4); }
   }
 
   private drawDummyPortrait(x: number, y: number, color: number, kind: UnitKind | 'building', scale: number): void {
-    if (kind === 'building') {
-      this.graphics.fillStyle(color, 1).fillRect(x - 18 * scale, y - 4 * scale, 36 * scale, 28 * scale);
-      this.graphics.fillStyle(0x3a2413, 1).fillTriangle(x - 24 * scale, y - 4 * scale, x, y - 28 * scale, x + 24 * scale, y - 4 * scale);
-      this.graphics.lineStyle(2, 0xf5e6b8, 0.8).strokeRect(x - 18 * scale, y - 4 * scale, 36 * scale, 28 * scale);
-      return;
-    }
-
-    this.graphics.fillStyle(color, 1).fillCircle(x, y - 20 * scale, 10 * scale);
-    this.graphics.fillRoundedRect(x - 16 * scale, y - 8 * scale, 32 * scale, 34 * scale, 7 * scale);
-    this.graphics.lineStyle(3, 0xe5e7eb, 0.9);
+    if (kind === 'building') { this.graphics.fillStyle(color, 1).fillRect(x - 18 * scale, y - 4 * scale, 36 * scale, 28 * scale); this.graphics.fillStyle(0x3a2413, 1).fillTriangle(x - 24 * scale, y - 4 * scale, x, y - 28 * scale, x + 24 * scale, y - 4 * scale); this.graphics.lineStyle(2, 0xf5e6b8, 0.8).strokeRect(x - 18 * scale, y - 4 * scale, 36 * scale, 28 * scale); return; }
+    this.graphics.fillStyle(color, 1).fillCircle(x, y - 20 * scale, 10 * scale); this.graphics.fillRoundedRect(x - 16 * scale, y - 8 * scale, 32 * scale, 34 * scale, 7 * scale); this.graphics.lineStyle(3, 0xe5e7eb, 0.9);
     if (kind === 'worker') this.graphics.lineBetween(x - 24 * scale, y - 32 * scale, x + 14 * scale, y + 2 * scale);
     if (kind === 'soldier') this.graphics.lineBetween(x + 18 * scale, y - 26 * scale, x + 18 * scale, y + 26 * scale);
     if (kind === 'specialist') this.graphics.strokeCircle(x, y - 20 * scale, 17 * scale);
     if (kind === 'cavalry') this.graphics.strokeEllipse(x, y + 8 * scale, 46 * scale, 22 * scale);
-    if (kind === 'artillery') {
-      this.graphics.strokeCircle(x - 16 * scale, y + 20 * scale, 7 * scale);
-      this.graphics.strokeCircle(x + 16 * scale, y + 20 * scale, 7 * scale);
-      this.graphics.lineBetween(x - 18 * scale, y, x + 26 * scale, y - 16 * scale);
-    }
+    if (kind === 'artillery') { this.graphics.strokeCircle(x - 16 * scale, y + 20 * scale, 7 * scale); this.graphics.strokeCircle(x + 16 * scale, y + 20 * scale, 7 * scale); this.graphics.lineBetween(x - 18 * scale, y, x + 26 * scale, y - 16 * scale); }
   }
 
-  private drawBar(x: number, y: number, width: number, height: number, value: number, color: number): void {
-    this.graphics.fillStyle(0x0f172a, 1).fillRect(x, y, width, height);
-    this.graphics.fillStyle(color, 1).fillRect(x, y, Math.max(0, Math.min(1, value)) * width, height);
-  }
+  private drawBar(x: number, y: number, width: number, height: number, value: number, color: number): void { this.graphics.fillStyle(0x0f172a, 1).fillRect(x, y, width, height); this.graphics.fillStyle(color, 1).fillRect(x, y, Math.max(0, Math.min(1, value)) * width, height); }
 
-  private addText(x: number, y: number, text: string, fontSize: string, color: string, originX = 0, wrapWidth?: number): void {
-    const style: Phaser.Types.GameObjects.Text.TextStyle = { fontFamily: 'Arial', fontSize, color };
-    if (wrapWidth) style.wordWrap = { width: wrapWidth };
-    const item = this.scene.add.text(x, y, text, style).setScrollFactor(0).setDepth(3400);
-    item.setOrigin(originX, 0);
-    this.texts.push(item);
-  }
-
+  private addText(x: number, y: number, text: string, fontSize: string, color: string, originX = 0, wrapWidth?: number): void { const style: Phaser.Types.GameObjects.Text.TextStyle = { fontFamily: 'Arial', fontSize, color }; if (wrapWidth) style.wordWrap = { width: wrapWidth }; const item = this.scene.add.text(x, y, text, style).setScrollFactor(0).setDepth(3400); item.setOrigin(originX, 0); this.texts.push(item); }
   private clearTexts(): void { this.texts.forEach((text) => text.destroy()); this.texts = []; }
-  private clearZones(): void { this.zones.forEach((zone) => zone.destroy()); this.zones = []; }
 }
