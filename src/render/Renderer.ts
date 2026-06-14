@@ -165,9 +165,11 @@ export class Renderer {
    * Отрисовка пути юнита
    */
   private _renderUnitPath(_unitPos: { x: number; y: number }, item: RenderItem): void {
-    if (!item.pathPoints || item.pathPoints.length < 2) return;
+    // Используем path вместо pathPoints
+    const path = item.path || item.pathPoints;
+    if (!path || path.length < 2) return;
     
-    const firstPoint = item.pathPoints[0];
+    const firstPoint = path[0];
     const firstScreen = IsoUtils.worldToScreen(
       { x: firstPoint.x, y: firstPoint.y, z: 0 },
       this.camera.position,
@@ -183,8 +185,8 @@ export class Renderer {
     this.ctx.beginPath();
     this.ctx.moveTo(firstScreen.x, firstScreen.y);
     
-    for (let i = 1; i < item.pathPoints.length; i++) {
-      const point = item.pathPoints[i];
+    for (let i = 1; i < path.length; i++) {
+      const point = path[i];
       const screen = IsoUtils.worldToScreen(
         { x: point.x, y: point.y, z: 0 },
         this.camera.position,
@@ -198,8 +200,8 @@ export class Renderer {
     this.ctx.setLineDash([]);
     
     // Рисуем точки пути
-    for (let i = 0; i < item.pathPoints.length; i++) {
-      const point = item.pathPoints[i];
+    for (let i = 0; i < path.length; i++) {
+      const point = path[i];
       const screen = IsoUtils.worldToScreen(
         { x: point.x, y: point.y, z: 0 },
         this.camera.position,
@@ -209,7 +211,7 @@ export class Renderer {
       
       // Точка пути
       const dotSize = 4 * this.camera.zoom;
-      this.ctx.fillStyle = i === item.pathPoints.length - 1 ? '#e74c3c' : '#f1c40f'; // Красная последняя точка
+      this.ctx.fillStyle = i === path.length - 1 ? '#e74c3c' : '#f1c40f'; // Красная последняя точка
       this.ctx.beginPath();
       this.ctx.arc(screen.x, screen.y, dotSize, 0, Math.PI * 2);
       this.ctx.fill();
