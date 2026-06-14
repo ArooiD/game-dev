@@ -223,7 +223,75 @@ export class TileMap {
       key = `${parent.x},${parent.y}`;
     }
     
-    return path;
+    // Сглаживание пути: убираем лишние точки, если можно идти напрямую
+    const smoothedPath = this._smoothPath(path);
+    
+    return smoothedPath;
+  }
+  
+  /**
+   * Сглаживает путь, убирая лишние повороты
+   */
+  private _smoothPath(path: Vector2[]): Vector2[] {
+    if (path.length < 3) return path;
+    
+    const smoothed: Vector2[] = [path[0]];
+    let current = path[0];
+    
+    for (let i = 1; i < path.length; i++) {
+      const next = path[i];
+      
+      // Проверяем, можно ли перейти от current напрямую к следующему после next
+      if (i + 1 < path.length) {
+        const afterNext = path[i + 1];
+        
+        // Если можно идти напрямую от current к afterNext (проверяем проходимость)
+        if (this._canSee(current, afterNext)) {
+          // Пропускаем next, продолжаем искать дальше
+          continue;
+        }
+      }
+      
+      smoothed.push(next);
+      current = next;
+    }
+    
+    // Добавляем последнюю точку если её нет
+    if (smoothed[smoothed.length - 1].x !== path[path.length - 1].x ||
+        smoothed[smoothed.length - 1].y !== path[path.length - 1].y) {
+      smoothed.push(path[path.length - 1]);
+    }
+    
+    return smoothed;
+  }
+  
+  /**
+   * Проверяет, видна ли точка B из точки A (нет ли препятствий)
+   */
+  private _canSee(a: Vector2, b: Vector2): boolean {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist < 1.1) return true; // Слишком близко
+    
+    const steps = Math.ceil(dist);
+    const stepX = dx / steps;
+    const stepY = dy / steps;
+    
+    let x = a.x;
+    let y = a.y;
+    
+    for (let i = 0; i <= steps; i++) {
+      const tile = this.getTile(Math.round(x), Math.round(y));
+      if (!tile || !tile.walkable) {
+        return false;
+      }
+      x += stepX;
+      y += stepY;
+    }
+    
+    return true;
   }
   
   /**

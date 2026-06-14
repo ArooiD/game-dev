@@ -201,13 +201,42 @@ export class Unit extends Entity {
     
     // Обработка движения по пути
     if (this.path.length > 0 && this.currentPathIndex < this.path.length) {
-      const target = this.path[this.currentPathIndex];
+      // Находим ближайшую целевую точку (пропускаем точки, которые уже "за" нами)
+      let targetIndex = this.currentPathIndex;
+      
+      // Проверяем, можно ли двигаться напрямую к более дальней точке
+      while (targetIndex + 1 < this.path.length) {
+        const currentTarget = this.path[targetIndex];
+        const nextTarget = this.path[targetIndex + 1];
+        
+        const dxToCurrent = currentTarget.x - this.position.x;
+        const dyToCurrent = currentTarget.y - this.position.y;
+        const distToCurrent = Math.sqrt(dxToCurrent * dxToCurrent + dyToCurrent * dyToCurrent);
+        
+        const dxToNext = nextTarget.x - this.position.x;
+        const dyToNext = nextTarget.y - this.position.y;
+        const distToNext = Math.sqrt(dxToNext * dxToNext + dyToNext * dyToNext);
+        
+        // Если следующая точка дальше, чем текущая, и мы уже прошли мимо текущей
+        // или если векторы направлены примерно в одну сторону
+        const dotProduct = dxToCurrent * dxToNext + dyToCurrent * dyToNext;
+        const isSameDirection = dotProduct > 0; // Острый угол между векторами
+        
+        if (isSameDirection && distToNext < distToCurrent + 0.5) {
+          // Можно двигаться к следующей точке
+          targetIndex++;
+        } else {
+          break;
+        }
+      }
+      
+      const target = this.path[targetIndex];
       const dx = target.x - this.position.x;
       const dy = target.y - this.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       
-      if (distance > 0.2) {
-        // Двигаемся к следующей точке пути
+      if (distance > 0.3) {
+        // Двигаемся к целевой точке
         const moveDistance = this.moveSpeed * deltaTime;
         const moveX = (dx / distance) * Math.min(moveDistance, distance);
         const moveY = (dy / distance) * Math.min(moveDistance, distance);
@@ -216,7 +245,7 @@ export class Unit extends Entity {
         this.position.y += moveY;
       } else {
         // Достигли точки пути, переходим к следующей
-        this.currentPathIndex++;
+        this.currentPathIndex = targetIndex + 1;
         if (this.currentPathIndex >= this.path.length) {
           // Достигли конечной точки
           this.path = [];
