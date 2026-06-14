@@ -1,17 +1,46 @@
 import Phaser from 'phaser';
 
 type Formation = 'line' | 'column' | 'square' | 'wedge' | 'doubleLine' | 'skirmish';
+type UnitKind = 'worker' | 'soldier' | 'specialist' | 'cavalry' | 'artillery';
+
+type UnitSpec = {
+  label: string;
+  color: number;
+  width: number;
+  height: number;
+  speed: number;
+  hp: number;
+  morale: number;
+  ammo: number;
+  range: number;
+  damage: number;
+  moraleDamage: number;
+  reloadMs: number;
+};
+
+const UNIT_SPECS: Record<UnitKind, UnitSpec> = {
+  worker: { label: 'Рабочий', color: 0x22c55e, width: 12, height: 12, speed: 52, hp: 70, morale: 70, ammo: 0, range: 0, damage: 4, moraleDamage: 2, reloadMs: 1000 },
+  soldier: { label: 'Воин', color: 0x2563eb, width: 14, height: 14, speed: 58, hp: 100, morale: 100, ammo: 12, range: 240, damage: 24, moraleDamage: 12, reloadMs: 1400 },
+  specialist: { label: 'Специалист', color: 0xa855f7, width: 13, height: 13, speed: 62, hp: 85, morale: 120, ammo: 18, range: 280, damage: 18, moraleDamage: 20, reloadMs: 1100 },
+  cavalry: { label: 'Кавалерия', color: 0xf59e0b, width: 20, height: 12, speed: 105, hp: 130, morale: 115, ammo: 6, range: 120, damage: 32, moraleDamage: 22, reloadMs: 1250 },
+  artillery: { label: 'Артиллерия', color: 0x64748b, width: 24, height: 18, speed: 28, hp: 160, morale: 90, ammo: 8, range: 520, damage: 70, moraleDamage: 40, reloadMs: 3200 },
+};
 
 type Unit = {
   id: number;
+  kind: UnitKind;
   battalionId: number | null;
   sprite: Phaser.GameObjects.Rectangle;
+  label: Phaser.GameObjects.Text;
   selected: boolean;
   target: Phaser.Math.Vector2 | null;
   speed: number;
   hp: number;
   morale: number;
   ammo: number;
+  range: number;
+  damage: number;
+  moraleDamage: number;
   reloadMs: number;
   lastShotAt: number;
 };
@@ -55,8 +84,15 @@ export class BattleScene extends Phaser.Scene {
     this.selectionRect = this.add.rectangle(0, 0, 1, 1, 0x84cc16, 0.15).setStrokeStyle(2, 0xa3e635).setVisible(false).setDepth(1000);
     this.hud = this.add.text(16, 16, '', { fontFamily: 'Arial', fontSize: '16px', color: '#e5e7eb', backgroundColor: '#111827cc', padding: { x: 12, y: 8 } }).setScrollFactor(0).setDepth(2000);
 
-    this.spawnBattalion(500, 600, 8, 5, false);
-    this.spawnBattalion(1800, 850, 8, 5, true);
+    this.spawnUnitBlock(360, 460, 5, 2, 'worker', false, false);
+    this.spawnUnitBlock(520, 600, 8, 5, 'soldier', false, true);
+    this.spawnUnitBlock(420, 760, 4, 2, 'specialist', false, false);
+    this.spawnUnitBlock(720, 760, 5, 2, 'cavalry', false, false);
+    this.spawnUnitBlock(900, 620, 3, 1, 'artillery', false, false);
+
+    this.spawnUnitBlock(1800, 850, 8, 5, 'soldier', true, false);
+    this.spawnUnitBlock(2000, 1040, 4, 2, 'cavalry', true, false);
+    this.spawnUnitBlock(2200, 920, 2, 1, 'artillery', true, false);
 
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', this.onPointerMove, this);
@@ -92,18 +128,32 @@ export class BattleScene extends Phaser.Scene {
     g.fillStyle(0x64748b, 0.5).fillEllipse(2200, 1450, 620, 340);
   }
 
-  private spawnBattalion(x: number, y: number, cols: number, rows: number, enemy: boolean): void {
-    const battalionId = enemy ? null : this.nextBattalionId++;
+  private spawnUnitBlock(x: number, y: number, cols: number, rows: number, kind: UnitKind, enemy: boolean, autoBattalion: boolean): void {
+    const battalionId = !enemy && autoBattalion ? this.nextBattalionId++ : null;
     const unitIds = new Set<number>();
+    const spec = UNIT_SPECS[kind];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const sprite = this.add.rectangle(x + c * 24, y + r * 24, 14, 14, enemy ? 0xdc2626 : 0x2563eb).setStrokeStyle(1, 0x111827);
-        const unit: Unit = { id: this.nextId++, battalionId, sprite, selected: false, target: null, speed: enemy ? 42 : 58, hp: 100, morale: 100, ammo: 12, reloadMs: 1400, lastShotAt: 0 };
+        const unit = this.createUnit(x + c * 28, y + r * 28, kind, enemy, battalionId);
         if (!enemy) unitIds.add(unit.id);
-        (enemy ? this.enemies : this.units).push(unit);
       }
     }
-    if (!enemy && battalionId !== null) this.battalions.push({ id: battalionId, name: `Отряд ${battalionId}`, unitIds, formation: 'line', angle: 0 });
+    if (!enemy && battalionId !== null) this.battalions.push({ id: battalionId, name: `${spec.label} ${battalionId}`, unitIds, formation: 'line', angle: 0 });
+  }
+
+  private createUnit(x: number, y: number, kind: UnitKind, enemy: boolean, battalionId: number | null): Unit {
+    const spec = UNIT_SPECS[kind];
+    const color = enemy ? 0xdc2626 : spec.color;
+    const sprite = this.add.rectangle(x, y, spec.width, spec.height, color).setStrokeStyle(1, 0x111827);
+    const marker = kind === 'worker' ? 'W' : kind === 'soldier' ? 'S' : kind === 'specialist' ? 'P' : kind === 'cavalry' ? 'C' : 'A';
+    const label = this.add.text(x, y - 16, marker, { fontFamily: 'Arial', fontSize: '10px', color: '#e5e7eb' }).setOrigin(0.5).setDepth(20);
+    const unit: Unit = {
+      id: this.nextId++, kind, battalionId, sprite, label, selected: false, target: null,
+      speed: enemy ? spec.speed * 0.85 : spec.speed, hp: spec.hp, morale: spec.morale, ammo: spec.ammo,
+      range: spec.range, damage: spec.damage, moraleDamage: spec.moraleDamage, reloadMs: spec.reloadMs, lastShotAt: 0,
+    };
+    (enemy ? this.enemies : this.units).push(unit);
+    return unit;
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
@@ -295,16 +345,19 @@ export class BattleScene extends Phaser.Scene {
       const angle = Phaser.Math.Angle.Between(unit.sprite.x, unit.sprite.y, unit.target.x, unit.target.y);
       unit.sprite.x += Math.cos(angle) * Math.min(step, dist);
       unit.sprite.y += Math.sin(angle) * Math.min(step, dist);
+      unit.label.setPosition(unit.sprite.x, unit.sprite.y - 16);
     }
   }
 
   private updateCombat(time: number): void {
     for (const unit of this.units) {
-      const target = this.findNearest(unit, this.enemies, 240);
+      if (unit.range <= 0) continue;
+      const target = this.findNearest(unit, this.enemies, unit.range);
       if (target && unit.ammo > 0 && time - unit.lastShotAt > unit.reloadMs) this.fire(unit, target, time);
     }
     for (const unit of this.enemies) {
-      const target = this.findNearest(unit, this.units, 220);
+      if (unit.range <= 0) continue;
+      const target = this.findNearest(unit, this.units, unit.range);
       if (target && unit.ammo > 0 && time - unit.lastShotAt > unit.reloadMs) this.fire(unit, target, time);
     }
     this.units = this.units.filter((u) => u.hp > 0 && u.morale > 0);
@@ -326,17 +379,39 @@ export class BattleScene extends Phaser.Scene {
   private fire(unit: Unit, target: Unit, time: number): void {
     unit.lastShotAt = time;
     unit.ammo -= 1;
-    target.hp -= 24;
-    target.morale -= 12;
-    const shot = this.add.line(0, 0, unit.sprite.x, unit.sprite.y, target.sprite.x, target.sprite.y, 0xfef08a, 0.8).setOrigin(0).setDepth(40);
-    this.time.delayedCall(90, () => shot.destroy());
-    if (target.hp <= 0 || target.morale <= 0) target.sprite.destroy();
+    target.hp -= unit.damage;
+    target.morale -= unit.moraleDamage;
+    const color = unit.kind === 'artillery' ? 0xfb923c : unit.kind === 'specialist' ? 0xc084fc : 0xfef08a;
+    const shot = this.add.line(0, 0, unit.sprite.x, unit.sprite.y, target.sprite.x, target.sprite.y, color, 0.8).setOrigin(0).setDepth(40);
+    if (unit.kind === 'artillery') this.applySplashDamage(target, 54, unit.damage * 0.45, unit.moraleDamage * 0.5);
+    this.time.delayedCall(unit.kind === 'artillery' ? 160 : 90, () => shot.destroy());
+    if (target.hp <= 0 || target.morale <= 0) this.destroyUnit(target);
+  }
+
+  private applySplashDamage(center: Unit, radius: number, damage: number, moraleDamage: number): void {
+    const pool = this.units.includes(center) ? this.units : this.enemies;
+    pool.forEach((target) => {
+      if (target.id === center.id) return;
+      const dist = Phaser.Math.Distance.Between(center.sprite.x, center.sprite.y, target.sprite.x, target.sprite.y);
+      if (dist <= radius) {
+        target.hp -= damage;
+        target.morale -= moraleDamage;
+        if (target.hp <= 0 || target.morale <= 0) this.destroyUnit(target);
+      }
+    });
+  }
+
+  private destroyUnit(unit: Unit): void {
+    unit.sprite.destroy();
+    unit.label.destroy();
   }
 
   private renderUnitState(): void {
     for (const unit of [...this.units, ...this.enemies]) {
       unit.sprite.setStrokeStyle(unit.selected ? 3 : 1, unit.selected ? 0xfacc15 : 0x111827);
-      unit.sprite.setAlpha(Math.max(0.25, unit.morale / 100));
+      unit.sprite.setAlpha(Math.max(0.25, unit.morale / UNIT_SPECS[unit.kind].morale));
+      unit.label.setPosition(unit.sprite.x, unit.sprite.y - 16);
+      unit.label.setVisible(unit.selected || unit.kind === 'artillery' || unit.kind === 'cavalry');
     }
   }
 
@@ -371,10 +446,15 @@ export class BattleScene extends Phaser.Scene {
 
   private updateHud(): void {
     const battalions = this.getSelectedBattalions();
+    const selected = this.units.filter((u) => this.selectedIds.has(u.id));
+    const kindCounts = selected.reduce<Record<UnitKind, number>>((acc, u) => {
+      acc[u.kind] += 1;
+      return acc;
+    }, { worker: 0, soldier: 0, specialist: 0, cavalry: 0, artillery: 0 });
     this.hud.setText([
       'Historical RTS MVP',
-      `Selected units: ${this.selectedIds.size}`,
-      `Selected battalions: ${battalions.length}`,
+      `Selected units: ${this.selectedIds.size} | battalions: ${battalions.length}`,
+      `Selected: W ${kindCounts.worker}, S ${kindCounts.soldier}, P ${kindCounts.specialist}, C ${kindCounts.cavalry}, A ${kindCounts.artillery}`,
       `Formation: ${this.formation} (1 line, 2 column, 3 square, 4 wedge, 5 double, 6 skirmish)`,
       `Blue: ${this.units.length} | Red: ${this.enemies.length} | Own battalions: ${this.battalions.length}`,
       'G: group selection | U: ungroup | R: reform in place',
