@@ -157,28 +157,6 @@ export class Game {
       });
     }
     
-    // Отрисовка рамки выделения (зеленая)
-    if (this.input.isSelecting && this.input.selectionStart && this.input.selectionEnd) {
-      const startX = Math.min(this.input.selectionStart.x, this.input.selectionEnd.x);
-      const startY = Math.min(this.input.selectionStart.y, this.input.selectionEnd.y);
-      const width = Math.abs(this.input.selectionEnd.x - this.input.selectionStart.x);
-      const height = Math.abs(this.input.selectionEnd.y - this.input.selectionStart.y);
-      
-      // Зеленая полупрозрачная область
-      this.renderer.drawRect(
-        startX,
-        startY,
-        width,
-        height,
-        'rgba(46, 204, 113, 0.3)'
-      );
-      
-      // Зеленая рамка
-      this.renderer.ctx.strokeStyle = '#2ecc71';
-      this.renderer.ctx.lineWidth = 2;
-      this.renderer.ctx.strokeRect(startX, startY, width, height);
-    }
-    
     // Отрисовка выделенных сущностей
     for (const entity of this._selectedEntities) {
       this.renderer.addRenderItem({
@@ -192,8 +170,27 @@ export class Game {
     // Отрисовка UI
     this._renderUI();
     
-    // Рендерим всё
+    // Рендерим всё (тайлы, юниты, здания, выделения)
     this.renderer.render();
+    
+    // Отрисовка рамки выделения ПОСЛЕ render() чтобы она была поверх всего
+    if (this.input.isSelecting && this.input.selectionStart && this.input.selectionEnd) {
+      const startX = Math.min(this.input.selectionStart.x, this.input.selectionEnd.x);
+      const startY = Math.min(this.input.selectionStart.y, this.input.selectionEnd.y);
+      const width = Math.abs(this.input.selectionEnd.x - this.input.selectionStart.x);
+      const height = Math.abs(this.input.selectionEnd.y - this.input.selectionStart.y);
+      
+      const ctx = this.renderer.ctx;
+      
+      // Зеленая полупрозрачная область
+      ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
+      ctx.fillRect(startX, startY, width, height);
+      
+      // Зеленая рамка
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startX, startY, width, height);
+    }
   }
   
   /**
