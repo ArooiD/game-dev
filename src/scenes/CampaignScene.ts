@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { initialCampaignState } from '../campaign/initialCampaign';
+import { europeCampaignState } from '../campaign/europeCampaign';
 import type { CampaignArmy, CampaignState, Region } from '../campaign/types';
 
 const OWNER_COLOR = {
@@ -9,7 +9,7 @@ const OWNER_COLOR = {
 };
 
 export class CampaignScene extends Phaser.Scene {
-  private state: CampaignState = structuredClone(initialCampaignState);
+  private state: CampaignState = structuredClone(europeCampaignState);
   private map!: Phaser.GameObjects.Graphics;
   private hud!: Phaser.GameObjects.Text;
   private details!: Phaser.GameObjects.Text;
@@ -75,14 +75,28 @@ export class CampaignScene extends Phaser.Scene {
 
   private render(): void {
     this.map.clear();
+    this.drawEuropeBackdrop();
     this.drawConnections();
     this.drawRegions();
     this.drawArmies();
     this.updateHud();
   }
 
+  private drawEuropeBackdrop(): void {
+    this.map.fillStyle(0x26394d, 1).fillRect(0, 0, 1100, 720);
+    this.map.fillStyle(0x344f3a, 0.95);
+    this.map.fillEllipse(470, 360, 780, 430);
+    this.map.fillEllipse(780, 315, 510, 330);
+    this.map.fillEllipse(240, 510, 230, 160);
+    this.map.fillEllipse(570, 570, 260, 220);
+    this.map.fillEllipse(580, 130, 300, 180);
+    this.map.fillStyle(0x213247, 1);
+    this.map.fillEllipse(180, 190, 150, 120);
+    this.map.fillEllipse(900, 650, 220, 120);
+  }
+
   private drawConnections(): void {
-    this.map.lineStyle(4, 0x6b7280, 0.45);
+    this.map.lineStyle(4, 0xd6b86a, 0.35);
     const drawn = new Set<string>();
     for (const region of this.state.regions) {
       for (const neighborId of region.neighbors) {
@@ -98,7 +112,7 @@ export class CampaignScene extends Phaser.Scene {
   private drawRegions(): void {
     for (const region of this.state.regions) {
       const selected = this.state.selectedRegionId === region.id;
-      this.map.fillStyle(OWNER_COLOR[region.owner], selected ? 0.95 : 0.65);
+      this.map.fillStyle(OWNER_COLOR[region.owner], selected ? 0.95 : 0.7);
       this.map.lineStyle(selected ? 5 : 2, selected ? 0xfacc15 : 0x111827, 1);
       this.map.fillCircle(region.x, region.y, selected ? 34 : 28);
       this.map.strokeCircle(region.x, region.y, selected ? 34 : 28);
@@ -133,11 +147,11 @@ export class CampaignScene extends Phaser.Scene {
     const blue = this.state.resources.blue;
     const red = this.state.resources.red;
     this.hud.setText([
-      `Campaign Mode — Turn ${this.state.turn}`,
+      `Europe Campaign — Turn ${this.state.turn}`,
       `Blue: 🍞 ${blue.food}  🪵 ${blue.wood}  ⛏ ${blue.iron}  🪙 ${blue.gold}`,
       `Red:  🍞 ${red.food}  🪵 ${red.wood}  ⛏ ${red.iron}  🪙 ${red.gold}`,
-      'Click region/army. Select army, then adjacent hostile region to start battle.',
-      'B: start test battle | N: next turn',
+      'Пошаговая стратегия: выбери армию и соседний регион для похода.',
+      'B: тестовая битва | N: следующий ход',
     ]);
 
     const region = this.state.selectedRegionId ? this.getRegion(this.state.selectedRegionId) : null;
