@@ -35,58 +35,61 @@ export class TileMap {
    * Генерирует карту с различными типами тайлов
    */
   private _generateMap(): void {
+    // Сначала создаём всю карту травой (проходимой)
     for (let y = 0; y < this._height; y++) {
       for (let x = 0; x < this._width; x++) {
-        let type: TileType = TileType.GRASS;
-        let walkable = true;
-        let cost = 1;
+        this._tiles.set(`${x},${y}`, { 
+          x, 
+          y, 
+          type: TileType.GRASS, 
+          walkable: true, 
+          cost: 1 
+        });
+      }
+    }
+    
+    // Затем добавляем случайные препятствия (но не в центре)
+    const centerX = Math.floor(this._width / 2);
+    const centerY = Math.floor(this._height / 2);
+    const safeRadius = 8; // Увеличил безопасную зону
+    
+    for (let y = 0; y < this._height; y++) {
+      for (let x = 0; x < this._width; x++) {
+        // Пропускаем безопасную зону в центре
+        const distFromCenter = Math.sqrt(
+          Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
+        );
         
-        // Простая генерация ландшафта
+        if (distFromCenter < safeRadius) continue;
+        
+        // Случайная генерация ландшафта за пределами безопасной зоны
         const noise = Math.sin(x * 0.3) * Math.cos(y * 0.3) + 
                      Math.sin(x * 0.1 + y * 0.2) * 0.5;
         
-        if (noise > 0.8) {
-          type = TileType.MOUNTAIN;
-          walkable = false;
-          cost = 999;
-        } else if (noise > 0.6) {
-          type = TileType.FOREST;
-          walkable = true;
-          cost = 2; // Лес замедляет движение
-        } else if (noise < -0.7) {
-          type = TileType.WATER;
-          walkable = false;
-          cost = 999;
-        } else if (noise < -0.3 && noise > -0.5) {
-          type = TileType.ROAD;
-          walkable = true;
-          cost = 0.5; // Дорога ускоряет движение
-        }
+        let tile = this._tiles.get(`${x},${y}`)!;
         
-        this._tiles.set(`${x},${y}`, { x, y, type, walkable, cost });
-      }
-    }
-    
-    // Создаем безопасную зону в центре для старта
-    const centerX = Math.floor(this._width / 2);
-    const centerY = Math.floor(this._height / 2);
-    const safeRadius = 5;
-    
-    for (let dy = -safeRadius; dy <= safeRadius; dy++) {
-      for (let dx = -safeRadius; dx <= safeRadius; dx++) {
-        const nx = centerX + dx;
-        const ny = centerY + dy;
-        if (nx >= 0 && nx < this._width && ny >= 0 && ny < this._height) {
-          const key = `${nx},${ny}`;
-          const tile = this._tiles.get(key);
-          if (tile) {
-            tile.type = TileType.GRASS;
-            tile.walkable = true;
-            tile.cost = 1;
-          }
+        if (noise > 0.85) {
+          tile.type = TileType.MOUNTAIN;
+          tile.walkable = false;
+          tile.cost = 999;
+        } else if (noise > 0.7) {
+          tile.type = TileType.FOREST;
+          tile.walkable = true;
+          tile.cost = 2;
+        } else if (noise < -0.8) {
+          tile.type = TileType.WATER;
+          tile.walkable = false;
+          tile.cost = 999;
+        } else if (noise < -0.4 && noise > -0.6) {
+          tile.type = TileType.ROAD;
+          tile.walkable = true;
+          tile.cost = 0.5;
         }
       }
     }
+    
+    console.log('Map generated:', this._width, 'x', this._height, 
+      'safe zone radius:', safeRadius, 'at', centerX, centerY);
   }
   
   /**

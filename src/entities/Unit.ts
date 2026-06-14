@@ -46,33 +46,63 @@ export class Unit extends Entity {
    * Устанавливает цель движения с pathfinding
    */
   moveTo(x: number, y: number): void {
+    const startX = Math.floor(this.position.x);
+    const startY = Math.floor(this.position.y);
+    const targetX = Math.floor(x);
+    const targetY = Math.floor(y);
+    
+    // Проверка: если старт и цель в одном тайле или очень близко
+    const dist = Math.sqrt(
+      Math.pow(x - this.position.x, 2) + 
+      Math.pow(y - this.position.y, 2)
+    );
+    
+    if (dist < 0.1) {
+      // Слишком близко, не создаём путь
+      console.log('Unit', this.id, 'target too close (', dist.toFixed(2), '), skipping');
+      this.path = [];
+      this.moveDirection = null;
+      return;
+    }
+    
     if (!this.tileMap) {
       // Если карты нет, просто двигаемся напрямую
       this.path = [
         { x: this.position.x, y: this.position.y, z: 0 },
         { x, y, z: 0 }
       ];
-      console.log('Unit', this.id, 'moving directly, path length:', this.path.length);
+      console.log('Unit', this.id, 'moving directly (no map), path length:', this.path.length);
     } else {
-      // Ищем путь по карте
-      const path = this.tileMap.findPath(
-        Math.floor(this.position.x),
-        Math.floor(this.position.y),
-        Math.floor(x),
-        Math.floor(y)
-      );
+      // Проверяем, проходимы ли стартовая и целевая клетки
+      const startWalkable = this.tileMap.isWalkable(startX, startY);
+      const targetWalkable = this.tileMap.isWalkable(targetX, targetY);
       
-      if (path && path.length > 0) {
-        this.path = path.map(p => ({ x: p.x, y: p.y, z: 0 }));
-        this.currentPathIndex = 0;
-        console.log('Unit', this.id, 'path found, length:', this.path.length);
-      } else {
-        // Путь не найден, пробуем напрямую
-        console.warn('Path not found for unit', this.id, ', moving directly');
+      if (!startWalkable || !targetWalkable) {
+        console.warn('Unit', this.id, 'start or target tile not walkable:', 
+          'start(', startX, startY, ')=', startWalkable, 
+          'target(', targetX, targetY, ')=', targetWalkable);
+        // Пробуем двигаться напрямую
         this.path = [
           { x: this.position.x, y: this.position.y, z: 0 },
           { x, y, z: 0 }
         ];
+      } else {
+        // Ищем путь по карте
+        const path = this.tileMap.findPath(startX, startY, targetX, targetY);
+        
+        if (path && path.length > 0) {
+          this.path = path.map(p => ({ x: p.x, y: p.y, z: 0 }));
+          this.currentPathIndex = 0;
+          console.log('Unit', this.id, 'path found, length:', this.path.length);
+        } else {
+          // Путь не найден, пробуем напрямую
+          console.warn('Path not found for unit', this.id, 
+            'from', startX, startY, 'to', targetX, targetY, ', moving directly');
+          this.path = [
+            { x: this.position.x, y: this.position.y, z: 0 },
+            { x, y, z: 0 }
+          ];
+        }
       }
     }
     
