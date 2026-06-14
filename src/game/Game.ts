@@ -275,22 +275,62 @@ export class Game {
     const selectionBox = this.input.getSelectionBox();
     if (!selectionBox) return;
     
-    this._selectedEntities.clear();
+    const { start, end } = selectionBox;
+    const isClick = Math.abs(start.x - end.x) < 5 && Math.abs(start.y - end.y) < 5;
     
+    this._selectedEntities.clear();
     const canvas = this.renderer.canvas;
     
-    for (const entity of this.entityManager.getAll()) {
-      if (!entity.isActive || entity.type !== EntityType.UNIT) continue;
-      
-      const screenPos = this.renderer.camera.worldToScreen(
-        entity.position.x,
-        entity.position.y,
+    if (isClick) {
+      // Клик - выделяем одного юнита
+      const clickWorldPos = this.renderer.camera.screenToWorld(
+        start.x,
+        start.y,
         canvas.width / 2,
         canvas.height / 2
       );
       
-      if (this.input.isPointInSelection(screenPos)) {
-        this._selectedEntities.add(entity as Unit);
+      // Ищем ближайшего юнита в радиусе выделения
+      let closestUnit: Unit | null = null;
+      let closestDistance = 0.5; // Радиус выделения
+      
+      for (const entity of this.entityManager.getAll()) {
+        if (!entity.isActive || entity.type !== EntityType.UNIT) continue;
+        
+        const dx = entity.position.x - clickWorldPos.x;
+        const dy = entity.position.y - clickWorldPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestUnit = entity as Unit;
+        }
+      }
+      
+      if (closestUnit) {
+        this._selectedEntities.add(closestUnit);
+      }
+    } else {
+      // Выделение рамкой
+      const minX = Math.min(start.x, end.x);
+      const maxX = Math.max(start.x, end.x);
+      const minY = Math.min(start.y, end.y);
+      const maxY = Math.max(start.y, end.y);
+      
+      for (const entity of this.entityManager.getAll()) {
+        if (!entity.isActive || entity.type !== EntityType.UNIT) continue;
+        
+        const screenPos = this.renderer.camera.worldToScreen(
+          entity.position.x,
+          entity.position.y,
+          canvas.width / 2,
+          canvas.height / 2
+        );
+        
+        if (screenPos.x >= minX && screenPos.x <= maxX &&
+            screenPos.y >= minY && screenPos.y <= maxY) {
+          this._selectedEntities.add(entity as Unit);
+        }
       }
     }
   }
