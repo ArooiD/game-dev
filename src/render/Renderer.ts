@@ -4,7 +4,7 @@
 
 import { Camera } from './Camera.js';
 import { IsoUtils } from '../utils/IsoUtils.js';
-import { WorldPosition, EntityType } from '../types.js';
+import { WorldPosition, EntityType, Vector2 } from '../types.js';
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -106,12 +106,24 @@ export class Renderer {
    * Отрисовывает один элемент
    */
   private _renderItem(item: RenderItem): void {
-    const screenPos = IsoUtils.worldToScreen(
-      item.worldPosition,
-      this.camera.position,
-      this._centerX,
-      this._centerY
-    );
+    // Для тайлов используем прямое преобразование
+    let screenPos: Vector2;
+    
+    if (item.type === 'tile') {
+      // Для тайлов: просто умножаем координаты сетки на размер тайла и применяем камеру
+      screenPos = {
+        x: (item.worldPosition.x - this.camera.position.x) * IsoUtils.TILE_WIDTH + this._centerX,
+        y: (item.worldPosition.y - this.camera.position.y) * IsoUtils.TILE_HEIGHT + this._centerY
+      };
+    } else {
+      // Для остальных элементов используем стандартное преобразование
+      screenPos = IsoUtils.worldToScreen(
+        item.worldPosition,
+        this.camera.position,
+        this._centerX,
+        this._centerY
+      );
+    }
     
     // Применяем зум к размеру элементов
     this.ctx.save();
