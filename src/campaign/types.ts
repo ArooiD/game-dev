@@ -1,14 +1,18 @@
 export type FactionId = 'blue' | 'red' | 'neutral';
 
 export type RegionId =
-  | 'capital'
-  | 'north_forest'
-  | 'river_crossing'
-  | 'iron_hills'
-  | 'southern_fields'
-  | 'eastern_fort'
-  | 'western_port'
-  | 'borderlands';
+  | 'britain'
+  | 'france'
+  | 'spain'
+  | 'low_countries'
+  | 'germany'
+  | 'italy'
+  | 'scandinavia'
+  | 'poland'
+  | 'austria'
+  | 'balkans'
+  | 'ottomans'
+  | 'russia';
 
 export type Region = {
   id: RegionId;
