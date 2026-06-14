@@ -117,13 +117,12 @@ export class Camera {
    * Преобразует мировые координаты в экранные
    */
   worldToScreen(worldX: number, worldY: number, centerX: number, centerY: number): Vector2 {
-    // Используем IsoUtils.worldToScreen с z=0
+    // Используем IsoUtils.worldToScreen с z=0 (без зума)
     return IsoUtils.worldToScreen(
       { x: worldX, y: worldY, z: 0 },
       this.position,
       centerX,
-      centerY,
-      this.zoom
+      centerY
     );
   }
   

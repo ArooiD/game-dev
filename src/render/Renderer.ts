@@ -110,10 +110,10 @@ export class Renderer {
       item.worldPosition,
       this.camera.position,
       this._centerX,
-      this._centerY,
-      this.camera.zoom
+      this._centerY
     );
     
+    // Применяем зум к размеру элементов
     this.ctx.save();
     
     switch (item.type) {
