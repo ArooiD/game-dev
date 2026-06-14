@@ -214,6 +214,53 @@ export class Renderer {
       this.ctx.fillStyle = healthPercent > 0.5 ? '#2ecc71' : healthPercent > 0.25 ? '#f39c12' : '#e74c3c';
       this.ctx.fillRect(pos.x - barWidth / 2, pos.y - height - 8, barWidth * healthPercent, barHeight);
     }
+    
+    // Стрелка направления движения
+    if (item.moveDirection) {
+      const arrowLength = 20 * this.camera.zoom;
+      const arrowOffset = height / 2 + 10 * this.camera.zoom;
+      
+      // Преобразуем мировое направление в экранный вектор
+      // В изометрии: экранная X = мировая (X - Y), экранная Y = мировая (X + Y)
+      const dirX = item.moveDirection.x - item.moveDirection.y;
+      const dirY = item.moveDirection.x + item.moveDirection.y;
+      const dirLength = Math.sqrt(dirX * dirX + dirY * dirY);
+      
+      if (dirLength > 0) {
+        const normDirX = dirX / dirLength;
+        const normDirY = dirY / dirLength;
+        
+        const startX = pos.x;
+        const startY = pos.y - arrowOffset;
+        const endX = startX + normDirX * arrowLength;
+        const endY = startY + normDirY * arrowLength;
+        
+        // Стрелка
+        this.ctx.strokeStyle = '#f1c40f';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+        
+        // Наконечник стрелки
+        const angle = Math.atan2(dirY, dirX);
+        const headLength = 8 * this.camera.zoom;
+        this.ctx.fillStyle = '#f1c40f';
+        this.ctx.beginPath();
+        this.ctx.moveTo(endX, endY);
+        this.ctx.lineTo(
+          endX - headLength * Math.cos(angle - Math.PI / 6),
+          endY - headLength * Math.sin(angle - Math.PI / 6)
+        );
+        this.ctx.lineTo(
+          endX - headLength * Math.cos(angle + Math.PI / 6),
+          endY - headLength * Math.sin(angle + Math.PI / 6)
+        );
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+    }
   }
   
   /**
@@ -340,4 +387,5 @@ export interface RenderItem {
   entityType?: EntityType;
   unitType?: string;
   color?: { r: number; g: number; b: number; a: number };
+  moveDirection?: { x: number; y: number };
 }

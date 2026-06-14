@@ -176,6 +176,7 @@ export class Game {
         height: entity.dimensions.height,
         unitType: entity instanceof Unit ? entity.unitType : undefined,
         color: entity instanceof Unit ? entity.color : undefined,
+        moveDirection: entity instanceof Unit ? entity.moveDirection || undefined : undefined,
       });
     }
     

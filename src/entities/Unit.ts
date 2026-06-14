@@ -17,6 +17,9 @@ export class Unit extends Entity {
   moveSpeed: number = 3; // единиц в секунду
   tileMap: TileMap | null = null;
   
+  // Направление движения (для визуализации)
+  moveDirection: { x: number; y: number } | null = null;
+  
   constructor(
     id: string,
     unitType: UnitType,
@@ -241,10 +244,14 @@ export class Unit extends Entity {
         const moveX = (dx / distance) * Math.min(moveDistance, distance);
         const moveY = (dy / distance) * Math.min(moveDistance, distance);
         
+        // Сохраняем направление для визуализации
+        this.moveDirection = { x: dx / distance, y: dy / distance };
+        
         this.position.x += moveX;
         this.position.y += moveY;
       } else {
-        // Достигли точки пути, переходим к следующей
+        // Достигли точки пути, сбрасываем направление
+        this.moveDirection = null;
         this.currentPathIndex = targetIndex + 1;
         if (this.currentPathIndex >= this.path.length) {
           // Достигли конечной точки
