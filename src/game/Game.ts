@@ -6,8 +6,9 @@ import { GameLoop } from './GameLoop.js';
 import { Renderer } from '../render/Renderer.js';
 import { InputHandler } from '../input/InputHandler.js';
 import { EntityManager } from '../core/EntityManager.js';
-import { EntityType, Color, Resources, UnitType } from '../types.js';
+import { EntityType, Color, Resources, UnitType, WorldPosition } from '../types.js';
 import { Unit } from '../entities/Unit.js';
+import { TileMap } from '../system/TileMap.js';
 
 export class Game {
   gameLoop: GameLoop;
@@ -32,6 +33,10 @@ export class Game {
   // Карта
   private _mapWidth: number = 32;
   private _mapHeight: number = 32;
+  private _tileMap: TileMap | null = null;
+  
+  // Путь для визуализации
+  private _visiblePath: WorldPosition[] = [];
   
   constructor() {
     this.gameLoop = new GameLoop();
@@ -89,15 +94,25 @@ export class Game {
   init(): void {
     console.log('Initializing game...');
     
+    // Создаем карту
+    this._tileMap = new TileMap(this._mapWidth, this._mapHeight);
+    
     // Создаем тестовые сущности
     this._createTestScene();
+    
+    // Настраиваем юниты с картой
+    for (const entity of this.entityManager.getAll()) {
+      if (entity instanceof Unit) {
+        entity.setTileMap(this._tileMap);
+      }
+    }
     
     // Устанавливаем границы камеры
     this.renderer.camera.setBounds(0, this._mapWidth, 0, this._mapHeight);
     this.renderer.camera.centerOn(this._mapWidth / 2, this._mapHeight / 2);
     
     this._state = 'PLAYING';
-    console.log('Game initialized');
+    console.log('Game initialized with TileMap');
   }
   
   /**
@@ -197,6 +212,8 @@ export class Game {
    * Отрисовка карты
    */
   private _renderMap(): void {
+    if (!this._tileMap) return;
+    
     const visible = this.renderer.camera.getVisibleBounds(
       this.renderer.canvas.width,
       this.renderer.canvas.height
@@ -209,11 +226,24 @@ export class Game {
     
     for (let y = startY; y < endY; y++) {
       for (let x = startX; x < endX; x++) {
+        const tile = this._tileMap.getTile(x, y);
+        if (!tile) continue;
+        
+        // Добавляем тайл
         this.renderer.addRenderItem({
           type: 'tile',
           worldPosition: { x, y, z: 0 },
         });
       }
+    }
+    
+    // Рисуем путь если есть
+    if (this._visiblePath.length > 1) {
+      this.renderer.addRenderItem({
+        type: 'path',
+        worldPosition: { x: 0, y: 0, z: 0 },
+        pathPoints: this._visiblePath,
+      });
     }
   }
   
@@ -285,16 +315,22 @@ export class Game {
     const targetX = Math.floor(worldPos.x);
     const targetY = Math.floor(worldPos.y);
     
+    // Проверяем, можно ли ходить туда
+    if (this._tileMap && !this._tileMap.isWalkable(targetX, targetY)) {
+      console.log('Cannot move to non-walkable tile');
+      return;
+    }
+    
     // Отправляем команду всем выделенным юнитам
     for (const unit of this._selectedEntities) {
       unit.moveTo(targetX, targetY);
     }
     
-    // Визуализируем точку назначения
-    this.renderer.addRenderItem({
-      type: 'default',
-      worldPosition: { x: targetX, y: targetY, z: 0 },
-    });
+    // Сохраняем путь для визуализации (берём путь первого юнита)
+    const firstUnit = Array.from(this._selectedEntities)[0];
+    if (firstUnit && firstUnit.path.length > 0) {
+      this._visiblePath = [...firstUnit.path];
+    }
     
     console.log('Move command to:', targetX, targetY, 'units:', this._selectedEntities.size);
   }

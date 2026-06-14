@@ -4,15 +4,18 @@
 
 import { Entity } from '../core/Entity.js';
 import { EntityType, WorldPosition, Dimensions, Color, UnitType, UnitStats } from '../types.js';
+import { TileMap } from '../system/TileMap.js';
 
 export class Unit extends Entity {
   unitType: UnitType;
   stats: UnitStats;
   team: string;
   
-  // Целевая позиция для движения
-  targetPosition: WorldPosition | null = null;
+  // Путь для движения
+  path: WorldPosition[] = [];
+  currentPathIndex: number = 0;
   moveSpeed: number = 3; // единиц в секунду
+  tileMap: TileMap | null = null;
   
   constructor(
     id: string,
@@ -27,6 +30,46 @@ export class Unit extends Entity {
     this.team = team;
     this.stats = this._getDefaultStats(unitType);
     this.moveSpeed = this.stats.moveSpeed;
+  }
+  
+  /**
+   * Устанавливает карту для pathfinding
+   */
+  setTileMap(tileMap: TileMap): void {
+    this.tileMap = tileMap;
+  }
+  
+  /**
+   * Устанавливает цель движения с pathfinding
+   */
+  moveTo(x: number, y: number): void {
+    if (!this.tileMap) {
+      // Если карты нет, просто двигаемся напрямую
+      this.path = [
+        { x: this.position.x, y: this.position.y, z: 0 },
+        { x, y, z: 0 }
+      ];
+    } else {
+      // Ищем путь по карте
+      const path = this.tileMap.findPath(
+        Math.floor(this.position.x),
+        Math.floor(this.position.y),
+        Math.floor(x),
+        Math.floor(y)
+      );
+      
+      if (path && path.length > 0) {
+        this.path = path.map(p => ({ x: p.x, y: p.y, z: 0 }));
+        this.currentPathIndex = 0;
+      } else {
+        // Путь не найден, пробуем напрямую
+        console.warn('Path not found, moving directly');
+        this.path = [
+          { x: this.position.x, y: this.position.y, z: 0 },
+          { x, y, z: 0 }
+        ];
+      }
+    }
   }
   
   /**
@@ -156,14 +199,15 @@ export class Unit extends Entity {
       );
     }
     
-    // Обработка движения к цели
-    if (this.targetPosition) {
-      const dx = this.targetPosition.x - this.position.x;
-      const dy = this.targetPosition.y - this.position.y;
+    // Обработка движения по пути
+    if (this.path.length > 0 && this.currentPathIndex < this.path.length) {
+      const target = this.path[this.currentPathIndex];
+      const dx = target.x - this.position.x;
+      const dy = target.y - this.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       
-      if (distance > 0.1) {
-        // Двигаемся к цели
+      if (distance > 0.2) {
+        // Двигаемся к следующей точке пути
         const moveDistance = this.moveSpeed * deltaTime;
         const moveX = (dx / distance) * Math.min(moveDistance, distance);
         const moveY = (dy / distance) * Math.min(moveDistance, distance);
@@ -171,23 +215,22 @@ export class Unit extends Entity {
         this.position.x += moveX;
         this.position.y += moveY;
       } else {
-        // Достигли цели
-        this.targetPosition = null;
+        // Достигли точки пути, переходим к следующей
+        this.currentPathIndex++;
+        if (this.currentPathIndex >= this.path.length) {
+          // Достигли конечной точки
+          this.path = [];
+          this.currentPathIndex = 0;
+        }
       }
     }
-  }
-  
-  /**
-   * Устанавливает цель движения
-   */
-  moveTo(x: number, y: number): void {
-    this.targetPosition = { x, y, z: 0 };
   }
   
   /**
    * Отменяет движение
    */
   stop(): void {
-    this.targetPosition = null;
+    this.path = [];
+    this.currentPathIndex = 0;
   }
 }
