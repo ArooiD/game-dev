@@ -52,6 +52,7 @@ export class Unit extends Entity {
         { x: this.position.x, y: this.position.y, z: 0 },
         { x, y, z: 0 }
       ];
+      console.log('Unit', this.id, 'moving directly, path length:', this.path.length);
     } else {
       // Ищем путь по карте
       const path = this.tileMap.findPath(
@@ -64,15 +65,19 @@ export class Unit extends Entity {
       if (path && path.length > 0) {
         this.path = path.map(p => ({ x: p.x, y: p.y, z: 0 }));
         this.currentPathIndex = 0;
+        console.log('Unit', this.id, 'path found, length:', this.path.length);
       } else {
         // Путь не найден, пробуем напрямую
-        console.warn('Path not found, moving directly');
+        console.warn('Path not found for unit', this.id, ', moving directly');
         this.path = [
           { x: this.position.x, y: this.position.y, z: 0 },
           { x, y, z: 0 }
         ];
       }
     }
+    
+    // Сбрасываем направление до начала движения
+    this.moveDirection = null;
   }
   
   /**

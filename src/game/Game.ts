@@ -169,6 +169,11 @@ export class Game {
         ? entity.path.map(p => ({ x: p.x, y: p.y, z: 0 }))
         : undefined;
       
+      // Отладка: выводим путь если он есть
+      if (entity instanceof Unit && entity.path.length > 0) {
+        console.log('Rendering path for unit:', entity.id, 'points:', entity.path.length);
+      }
+      
       this.renderer.addRenderItem({
         type: entity.type as any,
         worldPosition: entity.position,
@@ -445,8 +450,8 @@ export class Game {
       const unit = new Unit(
         `unit_${i}`,
         unitTypes[i],
-        { x: centerX + i * 2, y: centerY, z: 0 },
-        { width: 1, height: 1, depth: 1 },
+        { x: centerX + i * 0.5, y: centerY, z: 0 },  // Уменьшил расстояние между юнитами
+        { width: 0.25, height: 0.25, depth: 0.25 },  // Уменьшил размер в 4 раза (было 1)
         colors[i]
       );
       unit.addTag('player1');

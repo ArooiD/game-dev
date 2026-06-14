@@ -12,8 +12,8 @@ export class IsoUtils {
   static readonly ISO_ANGLE = Math.atan(0.5);
   
   // Ширина и высота изометрического тайла
-  static readonly TILE_WIDTH = 64;
-  static readonly TILE_HEIGHT = 32;
+  static readonly TILE_WIDTH = 16;  // Было 64, уменьшил в 4 раза
+  static readonly TILE_HEIGHT = 8;  // Было 32, уменьшил в 4 раза
   
   /**
    * Преобразует координаты сетки в экранные координаты
