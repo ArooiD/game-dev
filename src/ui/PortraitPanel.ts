@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BUILDING_SPECS } from '../economy/buildingTypes';
 import type { Building } from '../economy/productionTypes';
 import type { UnitKind } from '../units/unitTypes';
+import type { ActionIconKind, CommandAction } from './actionIcons';
 
 export type PortraitItem = {
   id: string;
@@ -21,11 +22,14 @@ export type PortraitPanelState = {
   portraits: PortraitItem[];
   selectedBuilding: Building | null;
   placementLabel: string | null;
+  actions: CommandAction[];
+  onAction?: (action: CommandAction) => void;
 };
 
 export class PortraitPanel {
   private graphics: Phaser.GameObjects.Graphics;
   private texts: Phaser.GameObjects.Text[] = [];
+  private zones: Phaser.GameObjects.Zone[] = [];
 
   constructor(private scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(3300);
@@ -34,11 +38,13 @@ export class PortraitPanel {
   render(x: number, y: number, state: PortraitPanelState): void {
     this.graphics.clear();
     this.clearTexts();
+    this.clearZones();
     this.graphics.fillStyle(0x120b07, 0.96).fillRoundedRect(x, y, 620, 136, 10);
     this.graphics.lineStyle(3, 0x8b6f3e, 1).strokeRoundedRect(x, y, 620, 136, 10);
 
     if (state.portraits.length === 0) {
       this.renderEmpty(x, y, state.placementLabel);
+      this.renderActions(x + 314, y + 18, state.actions, state.onAction);
       return;
     }
 
@@ -48,19 +54,14 @@ export class PortraitPanel {
       this.renderPortraitStrip(x + 14, y + 14, state.portraits);
     }
 
-    const commandTitle = state.selectedBuilding ? 'Команды здания' : 'Команды выбора';
-    const commandText = state.selectedBuilding
-      ? 'T рабочий | Q воин | E специалист | C кавалерия | A артиллерия'
-      : 'ПКМ движение/работа | 1-6 формации | G отряд | U распустить';
-    this.addText(x + 270, y + 24, commandTitle, '18px', '#f5e6b8');
-    this.addText(x + 270, y + 54, commandText, '13px', '#e5e7eb');
-    this.addText(x + 270, y + 84, state.placementLabel ? `Размещение: ${state.placementLabel}` : 'Портрет раскрывается только при выборе юнита, отряда или здания', '13px', '#facc15');
+    this.renderActions(x + 314, y + 18, state.actions, state.onAction);
+    this.addText(x + 500, y + 24, state.placementLabel ? `Размещение:\n${state.placementLabel}` : 'Иконки\nкоманд', '13px', '#facc15');
   }
 
   private renderEmpty(x: number, y: number, placementLabel: string | null): void {
     this.addText(x + 20, y + 22, 'Нет выбранного объекта', '18px', '#f5e6b8');
-    this.addText(x + 20, y + 54, 'Выбери одного юнита, отряд или здание, чтобы открыть портрет.', '13px', '#cbd5e1');
-    this.addText(x + 20, y + 84, placementLabel ? `Размещение: ${placementLabel}` : 'H дом | B казармы | S конюшня | F литейная', '13px', '#facc15');
+    this.addText(x + 20, y + 54, 'Выбери юнит, отряд или здание.', '13px', '#cbd5e1');
+    this.addText(x + 20, y + 84, placementLabel ? `Размещение: ${placementLabel}` : 'Команды появятся после выбора.', '13px', '#facc15');
   }
 
   private renderLargePortrait(x: number, y: number, item: PortraitItem): void {
@@ -79,7 +80,7 @@ export class PortraitPanel {
   private renderPortraitStrip(x: number, y: number, items: PortraitItem[]): void {
     const cardW = 112;
     const step = 86;
-    items.slice(0, 6).forEach((item, index) => {
+    items.slice(0, 3).forEach((item, index) => {
       const cardX = x + index * step;
       this.graphics.fillStyle(0x2b1c11, 1).fillRoundedRect(cardX, y, cardW, 108, 8);
       this.graphics.lineStyle(2, 0x8b6f3e, 1).strokeRoundedRect(cardX, y, cardW, 108, 8);
@@ -90,6 +91,45 @@ export class PortraitPanel {
       this.drawBar(cardX + 10, y + 78, 86, 6, item.hpPercent, 0x22c55e);
       if (item.moralePercent !== undefined) this.drawBar(cardX + 10, y + 90, 86, 6, item.moralePercent, 0x38bdf8);
     });
+  }
+
+  private renderActions(x: number, y: number, actions: CommandAction[], onAction?: (action: CommandAction) => void): void {
+    const size = 42;
+    const gap = 8;
+    actions.slice(0, 9).forEach((action, index) => {
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const ax = x + col * (size + gap);
+      const ay = y + row * (size + gap);
+      this.graphics.fillStyle(0x08090d, 1).fillRect(ax, ay, size, size);
+      this.graphics.lineStyle(2, 0x49634c, 1).strokeRect(ax, ay, size, size);
+      this.drawActionIcon(ax + size / 2, ay + size / 2, action.icon);
+      this.addText(ax + 4, ay + 2, action.hotkey, '10px', '#facc15');
+      const zone = this.scene.add.zone(ax, ay, size, size).setOrigin(0).setScrollFactor(0).setDepth(3600).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => { event.stopPropagation(); onAction?.(action); });
+      this.zones.push(zone);
+    });
+  }
+
+  private drawActionIcon(x: number, y: number, icon: ActionIconKind): void {
+    this.graphics.lineStyle(3, 0xe5e7eb, 0.9);
+    this.graphics.fillStyle(0xdc2626, 1);
+    if (icon === 'house' || icon === 'barracks' || icon === 'stable' || icon === 'foundry') {
+      const color = icon === 'foundry' ? 0x64748b : icon === 'stable' ? 0x92400e : icon === 'barracks' ? 0x78350f : 0x9a6b39;
+      this.graphics.fillStyle(color, 1).fillRect(x - 12, y - 2, 24, 16);
+      this.graphics.fillStyle(0x3a2413, 1).fillTriangle(x - 16, y - 2, x, y - 16, x + 16, y - 2);
+      return;
+    }
+    if (icon === 'repair' || icon === 'hammer') { this.graphics.lineBetween(x - 12, y + 12, x + 10, y - 10); this.graphics.lineBetween(x + 5, y - 14, x + 15, y - 4); return; }
+    if (icon === 'gather') { this.graphics.fillStyle(0x22c55e, 1).fillCircle(x - 7, y, 7); this.graphics.fillStyle(0x92400e, 1).fillRect(x + 4, y - 10, 7, 20); return; }
+    if (icon === 'stop') { this.graphics.fillStyle(0xdc2626, 1).fillRect(x - 11, y - 11, 22, 22); return; }
+    if (icon === 'attack') { this.graphics.lineBetween(x - 12, y + 12, x + 12, y - 12); this.graphics.lineBetween(x + 4, y - 12, x + 12, y - 12); this.graphics.lineBetween(x + 12, y - 12, x + 12, y - 4); return; }
+    if (icon === 'hold') { this.graphics.fillStyle(0x94a3b8, 1).fillTriangle(x, y - 15, x + 14, y + 10, x - 14, y + 10); return; }
+    if (icon === 'worker' || icon === 'soldier' || icon === 'specialist' || icon === 'cavalry' || icon === 'artillery') {
+      const color = icon === 'worker' ? 0x22c55e : icon === 'soldier' ? 0x2563eb : icon === 'specialist' ? 0xa855f7 : icon === 'cavalry' ? 0xf59e0b : 0x64748b;
+      this.graphics.fillStyle(color, 1).fillCircle(x, y - 7, 6);
+      this.graphics.fillRoundedRect(x - 9, y, 18, 17, 4);
+    }
   }
 
   private drawDummyPortrait(x: number, y: number, color: number, kind: UnitKind | 'building', scale: number): void {
@@ -128,5 +168,10 @@ export class PortraitPanel {
   private clearTexts(): void {
     this.texts.forEach((text) => text.destroy());
     this.texts = [];
+  }
+
+  private clearZones(): void {
+    this.zones.forEach((zone) => zone.destroy());
+    this.zones = [];
   }
 }
