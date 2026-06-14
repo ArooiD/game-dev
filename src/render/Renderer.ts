@@ -146,19 +146,14 @@ export class Renderer {
     const width = IsoUtils.TILE_WIDTH * this.camera.zoom;
     const height = IsoUtils.TILE_HEIGHT * this.camera.zoom;
     
-    this.ctx.beginPath();
-    this.ctx.moveTo(pos.x, pos.y);
-    this.ctx.lineTo(pos.x + width / 2, pos.y + height / 2);
-    this.ctx.lineTo(pos.x, pos.y + height);
-    this.ctx.lineTo(pos.x - width / 2, pos.y + height / 2);
-    this.ctx.closePath();
+    // Top-down: рисуем квадрат вместо ромба
+    this.ctx.fillStyle = '#4a6741';  // Зелёная трава
+    this.ctx.fillRect(pos.x, pos.y, width, height);
     
-    this.ctx.fillStyle = '#4a6741';
-    this.ctx.fill();
-    
-    this.ctx.strokeStyle = '#3d5635';
+    // Сетка (опционально, для визуализации)
+    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';  // Очень тонкая сетка
     this.ctx.lineWidth = 0.5;
-    this.ctx.stroke();
+    this.ctx.strokeRect(pos.x, pos.y, width, height);
   }
   
   /**

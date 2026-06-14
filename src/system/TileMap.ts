@@ -51,8 +51,9 @@ export class TileMap {
     // Затем добавляем случайные препятствия (но не в центре)
     const centerX = Math.floor(this._width / 2);
     const centerY = Math.floor(this._height / 2);
-    const safeRadius = 8; // Увеличил безопасную зону
+    const safeRadius = 8; // Безопасная зона в центре
     
+    // Добавляем немного случайных лесов и гор по краям
     for (let y = 0; y < this._height; y++) {
       for (let x = 0; x < this._width; x++) {
         // Пропускаем безопасную зону в центре
@@ -62,29 +63,20 @@ export class TileMap {
         
         if (distFromCenter < safeRadius) continue;
         
-        // Случайная генерация ландшафта за пределами безопасной зоны
-        const noise = Math.sin(x * 0.3) * Math.cos(y * 0.3) + 
-                     Math.sin(x * 0.1 + y * 0.2) * 0.5;
-        
+        // Случайная генерация с низкой вероятностью
+        const rand = Math.random();
         let tile = this._tiles.get(`${x},${y}`)!;
         
-        if (noise > 0.85) {
+        if (rand < 0.05) {  // 5% шанс горы
           tile.type = TileType.MOUNTAIN;
           tile.walkable = false;
           tile.cost = 999;
-        } else if (noise > 0.7) {
+        } else if (rand < 0.15) {  // 10% шанс леса
           tile.type = TileType.FOREST;
           tile.walkable = true;
           tile.cost = 2;
-        } else if (noise < -0.8) {
-          tile.type = TileType.WATER;
-          tile.walkable = false;
-          tile.cost = 999;
-        } else if (noise < -0.4 && noise > -0.6) {
-          tile.type = TileType.ROAD;
-          tile.walkable = true;
-          tile.cost = 0.5;
         }
+        // Остальные 85% - трава (без изменений)
       }
     }
     
