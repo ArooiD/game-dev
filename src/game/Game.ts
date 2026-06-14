@@ -290,7 +290,26 @@ export class Game {
    * Обработка нажатия клавиш
    */
   private _handleKeyPress(key: string): void {
+    const moveSpeed = 0.5;
+    
+    // Обработка стрелок для движения камеры
     switch (key.toLowerCase()) {
+      case 'arrowup':
+      case 'w':
+        this.renderer.camera.move(0, -moveSpeed);
+        break;
+      case 'arrowdown':
+      case 's':
+        this.renderer.camera.move(0, moveSpeed);
+        break;
+      case 'arrowleft':
+      case 'a':
+        this.renderer.camera.move(-moveSpeed, 0);
+        break;
+      case 'arrowright':
+      case 'd':
+        this.renderer.camera.move(moveSpeed, 0);
+        break;
       case 'escape':
         this._selectedEntities.clear();
         this.input.clearSelection();

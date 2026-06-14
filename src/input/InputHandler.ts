@@ -41,81 +41,88 @@ export class InputHandler {
    * Настраивает обработчики событий
    */
   private _setupEventListeners(): void {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
+    // Ждем пока canvas будет добавлен в DOM
+    const getCanvas = () => document.querySelector('canvas');
     
-    // Движение мыши
-    canvas.addEventListener('mousemove', (e) => {
-      this.mousePosition = { x: e.clientX, y: e.clientY };
+    const attachListeners = () => {
+      const canvas = getCanvas();
+      if (!canvas) return false;
       
-      if (this.isSelecting) {
-        this.selectionEnd = { x: e.clientX, y: e.clientY };
-        if (this.onSelectionChange && this.selectionStart) {
-          this.onSelectionChange(this.selectionStart, this.selectionEnd);
-        }
-      }
-    });
-    
-    // Нажатие кнопки мыши
-    canvas.addEventListener('mousedown', (e) => {
-      this.mouseButtonDown[e.button] = true;
-      this.mouseDown = true;
-      
-      if (e.button === 0) { // Левая кнопка - выделение
-        if (!this.isSelecting) {
-          this.isSelecting = true;
-          this.selectionStart = { x: e.clientX, y: e.clientY };
+      // Движение мыши
+      canvas.addEventListener('mousemove', (e) => {
+        this.mousePosition = { x: e.clientX, y: e.clientY };
+        
+        if (this.isSelecting) {
           this.selectionEnd = { x: e.clientX, y: e.clientY };
-          if (this.onSelectionStart) {
-            this.onSelectionStart(this.selectionStart);
+          if (this.onSelectionChange && this.selectionStart) {
+            this.onSelectionChange(this.selectionStart, this.selectionEnd);
           }
         }
-      } else if (e.button === 2) { // Правая кнопка - команда
+      });
+      
+      // Нажатие кнопки мыши
+      canvas.addEventListener('mousedown', (e) => {
+        this.mouseButtonDown[e.button] = true;
+        this.mouseDown = true;
+        
+        if (e.button === 0) { // Левая кнопка - выделение
+          if (!this.isSelecting) {
+            this.isSelecting = true;
+            this.selectionStart = { x: e.clientX, y: e.clientY };
+            this.selectionEnd = { x: e.clientX, y: e.clientY };
+            if (this.onSelectionStart) {
+              this.onSelectionStart(this.selectionStart);
+            }
+          }
+        } else if (e.button === 2) { // Правая кнопка - команда
+          e.preventDefault();
+          if (this.onMoveCommand) {
+            this.onMoveCommand(this.mousePosition);
+          }
+        }
+        
+        if (this.onClick) {
+          this.onClick(this.mousePosition, e.button);
+        }
+      });
+      
+      // Отпускание кнопки мыши
+      canvas.addEventListener('mouseup', (e) => {
+        this.mouseButtonDown[e.button] = false;
+        
+        if (e.button === 0 && this.isSelecting) {
+          this.isSelecting = false;
+          this.selectionEnd = { x: e.clientX, y: e.clientY };
+          if (this.onSelectionEnd) {
+            this.onSelectionEnd(this.selectionEnd);
+          }
+          this.selectionStart = null;
+          this.selectionEnd = null;
+        }
+        
+        if (e.button === 2) {
+          this.mouseDown = false;
+        }
+      });
+      
+      // Скролл
+      canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
-        if (this.onMoveCommand) {
-          this.onMoveCommand(this.mousePosition);
+        const delta = e.deltaY > 0 ? -this.scrollSensitivity : this.scrollSensitivity;
+        if (this.onScroll) {
+          this.onScroll(delta);
         }
-      }
+      }, { passive: false });
       
-      if (this.onClick) {
-        this.onClick(this.mousePosition, e.button);
-      }
-    });
-    
-    // Отпускание кнопки мыши
-    canvas.addEventListener('mouseup', (e) => {
-      this.mouseButtonDown[e.button] = false;
+      // Контекстное меню (отключаем)
+      canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
       
-      if (e.button === 0 && this.isSelecting) {
-        this.isSelecting = false;
-        this.selectionEnd = { x: e.clientX, y: e.clientY };
-        if (this.onSelectionEnd) {
-          this.onSelectionEnd(this.selectionEnd);
-        }
-        this.selectionStart = null;
-        this.selectionEnd = null;
-      }
-      
-      if (e.button === 2) {
-        this.mouseDown = false;
-      }
-    });
+      return true;
+    };
     
-    // Скролл
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -this.scrollSensitivity : this.scrollSensitivity;
-      if (this.onScroll) {
-        this.onScroll(delta);
-      }
-    }, { passive: false });
-    
-    // Контекстное меню (отключаем)
-    canvas.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-    });
-    
-    // Клавиатура
+    // Клавиатура (глобально)
     window.addEventListener('keydown', (e) => {
       if (this.onKey) {
         this.onKey(e.key, true);
@@ -127,6 +134,21 @@ export class InputHandler {
         this.onKey(e.key, false);
       }
     });
+    
+    // Пробуем сразу
+    if (!attachListeners()) {
+      // Если не получилось, ждем пока canvas появится
+      const checkInterval = setInterval(() => {
+        if (attachListeners()) {
+          clearInterval(checkInterval);
+        }
+      }, 100);
+      
+      // Timeout через 5 секунд
+      setTimeout(() => {
+        clearInterval(checkInterval);
+      }, 5000);
+    }
   }
   
   /**
