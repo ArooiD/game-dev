@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 
-type Formation = 'line' | 'column' | 'square';
+type Formation = 'line' | 'column' | 'square' | 'wedge' | 'doubleLine' | 'skirmish';
 
 type Unit = {
   id: number;
+  battalionId: number | null;
   sprite: Phaser.GameObjects.Rectangle;
   selected: boolean;
   target: Phaser.Math.Vector2 | null;
@@ -15,17 +16,28 @@ type Unit = {
   lastShotAt: number;
 };
 
+type Battalion = {
+  id: number;
+  name: string;
+  unitIds: Set<number>;
+  formation: Formation;
+  angle: number;
+};
+
 export class BattleScene extends Phaser.Scene {
   private units: Unit[] = [];
   private enemies: Unit[] = [];
+  private battalions: Battalion[] = [];
   private selectedIds = new Set<number>();
   private selectionStart: Phaser.Math.Vector2 | null = null;
   private rightDragStart: Phaser.Math.Vector2 | null = null;
   private selectionRect!: Phaser.GameObjects.Rectangle;
   private commandPreview!: Phaser.GameObjects.Graphics;
   private commandLines!: Phaser.GameObjects.Graphics;
+  private battalionGraphics!: Phaser.GameObjects.Graphics;
   private hud!: Phaser.GameObjects.Text;
   private nextId = 1;
+  private nextBattalionId = 1;
   private formation: Formation = 'line';
 
   constructor() {
@@ -38,6 +50,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.drawTerrain();
     this.commandLines = this.add.graphics().setDepth(50);
+    this.battalionGraphics = this.add.graphics().setDepth(60);
     this.commandPreview = this.add.graphics().setDepth(900);
     this.selectionRect = this.add.rectangle(0, 0, 1, 1, 0x84cc16, 0.15).setStrokeStyle(2, 0xa3e635).setVisible(false).setDepth(1000);
     this.hud = this.add.text(16, 16, '', { fontFamily: 'Arial', fontSize: '16px', color: '#e5e7eb', backgroundColor: '#111827cc', padding: { x: 12, y: 8 } }).setScrollFactor(0).setDepth(2000);
@@ -48,9 +61,15 @@ export class BattleScene extends Phaser.Scene {
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', this.onPointerMove, this);
     this.input.on('pointerup', this.onPointerUp, this);
-    this.input.keyboard?.on('keydown-ONE', () => this.formation = 'line');
-    this.input.keyboard?.on('keydown-TWO', () => this.formation = 'column');
-    this.input.keyboard?.on('keydown-THREE', () => this.formation = 'square');
+    this.input.keyboard?.on('keydown-ONE', () => this.setFormation('line'));
+    this.input.keyboard?.on('keydown-TWO', () => this.setFormation('column'));
+    this.input.keyboard?.on('keydown-THREE', () => this.setFormation('square'));
+    this.input.keyboard?.on('keydown-FOUR', () => this.setFormation('wedge'));
+    this.input.keyboard?.on('keydown-FIVE', () => this.setFormation('doubleLine'));
+    this.input.keyboard?.on('keydown-SIX', () => this.setFormation('skirmish'));
+    this.input.keyboard?.on('keydown-G', () => this.createBattalionFromSelection());
+    this.input.keyboard?.on('keydown-U', () => this.ungroupSelectedBattalions());
+    this.input.keyboard?.on('keydown-R', () => this.reformSelectedInPlace());
     this.input.keyboard?.on('keydown-ESC', () => this.clearSelection());
   }
 
@@ -60,6 +79,7 @@ export class BattleScene extends Phaser.Scene {
     this.updateUnits(this.enemies, delta);
     this.updateCombat(time);
     this.renderUnitState();
+    this.renderBattalions();
     this.updateHud();
   }
 
@@ -73,13 +93,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private spawnBattalion(x: number, y: number, cols: number, rows: number, enemy: boolean): void {
+    const battalionId = enemy ? null : this.nextBattalionId++;
+    const unitIds = new Set<number>();
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const sprite = this.add.rectangle(x + c * 24, y + r * 24, 14, 14, enemy ? 0xdc2626 : 0x2563eb).setStrokeStyle(1, 0x111827);
-        const unit: Unit = { id: this.nextId++, sprite, selected: false, target: null, speed: enemy ? 42 : 58, hp: 100, morale: 100, ammo: 12, reloadMs: 1400, lastShotAt: 0 };
+        const unit: Unit = { id: this.nextId++, battalionId, sprite, selected: false, target: null, speed: enemy ? 42 : 58, hp: 100, morale: 100, ammo: 12, reloadMs: 1400, lastShotAt: 0 };
+        if (!enemy) unitIds.add(unit.id);
         (enemy ? this.enemies : this.units).push(unit);
       }
     }
+    if (!enemy && battalionId !== null) this.battalions.push({ id: battalionId, name: `Отряд ${battalionId}`, unitIds, formation: 'line', angle: 0 });
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
@@ -127,33 +151,84 @@ export class BattleScene extends Phaser.Scene {
         this.selectedIds.add(unit.id);
       }
     });
+    this.expandSelectionToBattalions();
     this.selectionStart = null;
     this.selectionRect.setVisible(false);
   }
 
-  private issueMoveCommand(x: number, y: number, angle: number): void {
-    const selected = this.units.filter((u) => this.selectedIds.has(u.id));
-    const offsets = this.getFormationOffsets(selected.length, angle);
-    selected.forEach((unit, index) => {
-      const offset = offsets[index] ?? new Phaser.Math.Vector2(0, 0);
-      unit.target = new Phaser.Math.Vector2(x + offset.x, y + offset.y);
-    });
-    this.commandLines.clear();
-    this.drawFormationGhost(this.commandLines, x, y, angle, selected.length, 0xfacc15, 0.65);
+  private setFormation(formation: Formation): void {
+    this.formation = formation;
+    this.getSelectedBattalions().forEach((b) => b.formation = formation);
   }
 
-  private getFormationOffsets(count: number, angle: number): Phaser.Math.Vector2[] {
-    const raw: Phaser.Math.Vector2[] = [];
-    if (this.formation === 'column') {
-      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % 4) * 22 - 33, Math.floor(i / 4) * 22));
-    } else if (this.formation === 'square') {
-      const side = Math.ceil(Math.sqrt(count));
-      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % side) * 22 - (side - 1) * 11, Math.floor(i / side) * 22 - (side - 1) * 11));
-    } else {
-      const width = Math.min(12, Math.max(1, count));
-      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % width) * 22 - (width - 1) * 11, Math.floor(i / width) * 22));
+  private issueMoveCommand(x: number, y: number, angle: number): void {
+    const selected = this.units.filter((u) => this.selectedIds.has(u.id));
+    const battalions = this.getSelectedBattalions();
+    const groupedIds = new Set<number>();
+    battalions.forEach((b) => b.unitIds.forEach((id) => groupedIds.add(id)));
+
+    if (battalions.length > 0) {
+      const groupOffsets = this.getGroupOffsets(battalions.length, angle);
+      battalions.forEach((b, index) => {
+        b.angle = angle;
+        b.formation = this.formation;
+        const members = this.units.filter((u) => b.unitIds.has(u.id));
+        const base = groupOffsets[index] ?? new Phaser.Math.Vector2(0, 0);
+        const offsets = this.getFormationOffsets(members.length, angle, b.formation);
+        members.forEach((unit, unitIndex) => {
+          const offset = offsets[unitIndex] ?? new Phaser.Math.Vector2(0, 0);
+          unit.target = new Phaser.Math.Vector2(x + base.x + offset.x, y + base.y + offset.y);
+        });
+      });
     }
-    return raw.map((v) => new Phaser.Math.Vector2(v.x * Math.cos(angle) - v.y * Math.sin(angle), v.x * Math.sin(angle) + v.y * Math.cos(angle)));
+
+    const loose = selected.filter((u) => !groupedIds.has(u.id));
+    const looseOffsets = this.getFormationOffsets(loose.length, angle, this.formation);
+    loose.forEach((unit, index) => {
+      const offset = looseOffsets[index] ?? new Phaser.Math.Vector2(0, 0);
+      unit.target = new Phaser.Math.Vector2(x + offset.x, y + offset.y);
+    });
+
+    this.commandLines.clear();
+    this.drawFormationGhost(this.commandLines, x, y, angle, selected.length, 0xfacc15, 0.65, this.formation);
+  }
+
+  private getGroupOffsets(count: number, angle: number): Phaser.Math.Vector2[] {
+    const raw: Phaser.Math.Vector2[] = [];
+    const spacing = 180;
+    for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i - (count - 1) / 2) * spacing, 0));
+    return raw.map((v) => this.rotate(v, angle));
+  }
+
+  private getFormationOffsets(count: number, angle: number, formation = this.formation): Phaser.Math.Vector2[] {
+    const raw: Phaser.Math.Vector2[] = [];
+    const gap = formation === 'skirmish' ? 34 : 22;
+    if (formation === 'column') {
+      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % 4) * gap - 1.5 * gap, Math.floor(i / 4) * gap));
+    } else if (formation === 'square') {
+      const side = Math.ceil(Math.sqrt(count));
+      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % side) * gap - (side - 1) * gap / 2, Math.floor(i / side) * gap - (side - 1) * gap / 2));
+    } else if (formation === 'wedge') {
+      let placed = 0;
+      for (let row = 0; placed < count; row++) {
+        const rowCount = row * 2 + 1;
+        for (let col = 0; col < rowCount && placed < count; col++) {
+          raw.push(new Phaser.Math.Vector2((col - row) * gap, row * gap));
+          placed++;
+        }
+      }
+    } else if (formation === 'doubleLine') {
+      const width = Math.ceil(count / 2);
+      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % width) * gap - (width - 1) * gap / 2, Math.floor(i / width) * gap));
+    } else {
+      const width = formation === 'skirmish' ? Math.min(16, Math.max(1, count)) : Math.min(12, Math.max(1, count));
+      for (let i = 0; i < count; i++) raw.push(new Phaser.Math.Vector2((i % width) * gap - (width - 1) * gap / 2, Math.floor(i / width) * gap));
+    }
+    return raw.map((v) => this.rotate(v, angle));
+  }
+
+  private rotate(v: Phaser.Math.Vector2, angle: number): Phaser.Math.Vector2 {
+    return new Phaser.Math.Vector2(v.x * Math.cos(angle) - v.y * Math.sin(angle), v.x * Math.sin(angle) + v.y * Math.cos(angle));
   }
 
   private drawCommandPreview(start: Phaser.Math.Vector2, end: Phaser.Math.Vector2): void {
@@ -161,14 +236,51 @@ export class BattleScene extends Phaser.Scene {
     const angle = Phaser.Math.Distance.Between(start.x, start.y, end.x, end.y) > 12 ? Phaser.Math.Angle.Between(start.x, start.y, end.x, end.y) : 0;
     this.commandPreview.clear();
     this.commandPreview.lineStyle(2, 0xfacc15, 0.85).lineBetween(start.x, start.y, end.x, end.y).strokeCircle(start.x, start.y, 10);
-    this.drawFormationGhost(this.commandPreview, start.x, start.y, angle, count, 0xfacc15, 0.35);
+    this.drawFormationGhost(this.commandPreview, start.x, start.y, angle, count, 0xfacc15, 0.35, this.formation);
   }
 
-  private drawFormationGhost(g: Phaser.GameObjects.Graphics, x: number, y: number, angle: number, count: number, color: number, alpha: number): void {
-    const offsets = this.getFormationOffsets(count, angle);
+  private drawFormationGhost(g: Phaser.GameObjects.Graphics, x: number, y: number, angle: number, count: number, color: number, alpha: number, formation: Formation): void {
+    const offsets = this.getFormationOffsets(count, angle, formation);
     g.lineStyle(1, color, alpha);
-    g.fillStyle(color, alpha);
     offsets.forEach((offset) => g.strokeRect(x + offset.x - 7, y + offset.y - 7, 14, 14));
+  }
+
+  private createBattalionFromSelection(): void {
+    const selected = this.units.filter((u) => this.selectedIds.has(u.id));
+    if (selected.length === 0) return;
+    const id = this.nextBattalionId++;
+    const unitIds = new Set(selected.map((u) => u.id));
+    selected.forEach((u) => u.battalionId = id);
+    this.battalions = this.battalions.filter((b) => [...b.unitIds].every((unitId) => !unitIds.has(unitId)));
+    this.battalions.push({ id, name: `Отряд ${id}`, unitIds, formation: this.formation, angle: 0 });
+  }
+
+  private ungroupSelectedBattalions(): void {
+    const selectedBattalionIds = new Set(this.getSelectedBattalions().map((b) => b.id));
+    if (selectedBattalionIds.size === 0) return;
+    this.units.forEach((u) => { if (u.battalionId && selectedBattalionIds.has(u.battalionId)) u.battalionId = null; });
+    this.battalions = this.battalions.filter((b) => !selectedBattalionIds.has(b.id));
+  }
+
+  private reformSelectedInPlace(): void {
+    const selected = this.units.filter((u) => this.selectedIds.has(u.id));
+    if (selected.length === 0) return;
+    const center = selected.reduce((acc, u) => acc.add(new Phaser.Math.Vector2(u.sprite.x, u.sprite.y)), new Phaser.Math.Vector2(0, 0)).scale(1 / selected.length);
+    this.issueMoveCommand(center.x, center.y, this.getSelectedBattalions()[0]?.angle ?? 0);
+  }
+
+  private expandSelectionToBattalions(): void {
+    const touchedBattalionIds = new Set(this.units.filter((u) => this.selectedIds.has(u.id) && u.battalionId !== null).map((u) => u.battalionId as number));
+    this.units.forEach((unit) => {
+      if (unit.battalionId !== null && touchedBattalionIds.has(unit.battalionId)) {
+        unit.selected = true;
+        this.selectedIds.add(unit.id);
+      }
+    });
+  }
+
+  private getSelectedBattalions(): Battalion[] {
+    return this.battalions.filter((b) => [...b.unitIds].some((id) => this.selectedIds.has(id)));
   }
 
   private updateUnits(units: Unit[], delta: number): void {
@@ -197,6 +309,8 @@ export class BattleScene extends Phaser.Scene {
     }
     this.units = this.units.filter((u) => u.hp > 0 && u.morale > 0);
     this.enemies = this.enemies.filter((u) => u.hp > 0 && u.morale > 0);
+    this.battalions.forEach((b) => b.unitIds = new Set([...b.unitIds].filter((id) => this.units.some((u) => u.id === id))));
+    this.battalions = this.battalions.filter((b) => b.unitIds.size > 0);
   }
 
   private findNearest(unit: Unit, targets: Unit[], range: number): Unit | null {
@@ -226,6 +340,19 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  private renderBattalions(): void {
+    this.battalionGraphics.clear();
+    this.getSelectedBattalions().forEach((b) => {
+      const members = this.units.filter((u) => b.unitIds.has(u.id));
+      if (members.length === 0) return;
+      const minX = Math.min(...members.map((u) => u.sprite.x));
+      const maxX = Math.max(...members.map((u) => u.sprite.x));
+      const minY = Math.min(...members.map((u) => u.sprite.y));
+      const maxY = Math.max(...members.map((u) => u.sprite.y));
+      this.battalionGraphics.lineStyle(2, 0x38bdf8, 0.75).strokeRect(minX - 16, minY - 16, maxX - minX + 32, maxY - minY + 32);
+    });
+  }
+
   private updateCamera(delta: number): void {
     const keys = this.input.keyboard?.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key> | undefined;
     if (!keys) return;
@@ -243,12 +370,15 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private updateHud(): void {
+    const battalions = this.getSelectedBattalions();
     this.hud.setText([
       'Historical RTS MVP',
-      `Selected: ${this.selectedIds.size}`,
-      `Formation: ${this.formation} (1 line, 2 column, 3 square)`,
-      `Blue: ${this.units.length} | Red: ${this.enemies.length}`,
-      'LMB drag: select | RMB click/drag: move + face direction | WASD: camera | ESC: clear',
+      `Selected units: ${this.selectedIds.size}`,
+      `Selected battalions: ${battalions.length}`,
+      `Formation: ${this.formation} (1 line, 2 column, 3 square, 4 wedge, 5 double, 6 skirmish)`,
+      `Blue: ${this.units.length} | Red: ${this.enemies.length} | Own battalions: ${this.battalions.length}`,
+      'G: group selection | U: ungroup | R: reform in place',
+      'LMB drag: select | RMB drag: move + face direction | WASD: camera | ESC: clear',
     ]);
   }
 }
