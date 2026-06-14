@@ -21,28 +21,29 @@ export type CommandAction = {
   label: string;
   hotkey: string;
   icon: ActionIconKind;
+  description: string;
 };
 
 export const WORKER_ACTIONS: CommandAction[] = [
-  { id: 'build_house', label: 'Дом', hotkey: 'H', icon: 'house' },
-  { id: 'build_barracks', label: 'Казармы', hotkey: 'B', icon: 'barracks' },
-  { id: 'build_stable', label: 'Конюшня', hotkey: 'S', icon: 'stable' },
-  { id: 'build_foundry', label: 'Литейная', hotkey: 'F', icon: 'foundry' },
-  { id: 'repair', label: 'Ремонт', hotkey: 'R', icon: 'repair' },
-  { id: 'gather', label: 'Добыча', hotkey: 'G', icon: 'gather' },
-  { id: 'stop', label: 'Стоп', hotkey: 'X', icon: 'stop' },
+  { id: 'build_house', label: 'Дом', hotkey: 'H', icon: 'house', description: 'Построить дом. Увеличивает лимит населения.' },
+  { id: 'build_barracks', label: 'Казармы', hotkey: 'B', icon: 'barracks', description: 'Построить казармы. Открывают производство воинов и специалистов.' },
+  { id: 'build_stable', label: 'Конюшня', hotkey: 'S', icon: 'stable', description: 'Построить конюшню. Производит кавалерию.' },
+  { id: 'build_foundry', label: 'Литейная', hotkey: 'F', icon: 'foundry', description: 'Построить литейную. Производит артиллерию.' },
+  { id: 'repair', label: 'Ремонт', hotkey: 'R', icon: 'repair', description: 'Отправить рабочего ремонтировать повреждённое здание.' },
+  { id: 'gather', label: 'Добыча', hotkey: 'G', icon: 'gather', description: 'Назначить рабочего на добычу ближайшего ресурса.' },
+  { id: 'stop', label: 'Стоп', hotkey: 'X', icon: 'stop', description: 'Остановить текущую задачу выбранных рабочих.' },
 ];
 
 export const MILITARY_ACTIONS: CommandAction[] = [
-  { id: 'attack', label: 'Атака', hotkey: 'A', icon: 'attack' },
-  { id: 'hold', label: 'Держать', hotkey: 'H', icon: 'hold' },
-  { id: 'stop', label: 'Стоп', hotkey: 'X', icon: 'stop' },
+  { id: 'attack', label: 'Атака', hotkey: 'A', icon: 'attack', description: 'Перейти в режим атаки выбранными боевыми юнитами.' },
+  { id: 'hold', label: 'Держать', hotkey: 'H', icon: 'hold', description: 'Удерживать позицию и не преследовать цель.' },
+  { id: 'stop', label: 'Стоп', hotkey: 'X', icon: 'stop', description: 'Остановить движение и текущий приказ.' },
 ];
 
 export const BUILDING_ACTIONS: CommandAction[] = [
-  { id: 'train_worker', label: 'Рабочий', hotkey: 'T', icon: 'worker' },
-  { id: 'train_soldier', label: 'Воин', hotkey: 'Q', icon: 'soldier' },
-  { id: 'train_specialist', label: 'Спец.', hotkey: 'E', icon: 'specialist' },
-  { id: 'train_cavalry', label: 'Кав.', hotkey: 'C', icon: 'cavalry' },
-  { id: 'train_artillery', label: 'Арт.', hotkey: 'A', icon: 'artillery' },
+  { id: 'train_worker', label: 'Рабочий', hotkey: 'T', icon: 'worker', description: 'Произвести рабочего. Доступно только в ратуше.' },
+  { id: 'train_soldier', label: 'Воин', hotkey: 'Q', icon: 'soldier', description: 'Произвести линейного солдата. Доступно в казармах.' },
+  { id: 'train_specialist', label: 'Спец.', hotkey: 'E', icon: 'specialist', description: 'Произвести специалиста дальнего боя. Доступно в казармах.' },
+  { id: 'train_cavalry', label: 'Кав.', hotkey: 'C', icon: 'cavalry', description: 'Произвести кавалерию. Доступно в конюшне.' },
+  { id: 'train_artillery', label: 'Арт.', hotkey: 'A', icon: 'artillery', description: 'Произвести артиллерию. Доступно в литейной.' },
 ];
