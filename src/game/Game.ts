@@ -157,15 +157,26 @@ export class Game {
       });
     }
     
-    // Отрисовка выделения
+    // Отрисовка рамки выделения (зеленая)
     if (this.input.isSelecting && this.input.selectionStart && this.input.selectionEnd) {
+      const startX = Math.min(this.input.selectionStart.x, this.input.selectionEnd.x);
+      const startY = Math.min(this.input.selectionStart.y, this.input.selectionEnd.y);
+      const width = Math.abs(this.input.selectionEnd.x - this.input.selectionStart.x);
+      const height = Math.abs(this.input.selectionEnd.y - this.input.selectionStart.y);
+      
+      // Зеленая полупрозрачная область
       this.renderer.drawRect(
-        Math.min(this.input.selectionStart.x, this.input.selectionEnd.x),
-        Math.min(this.input.selectionStart.y, this.input.selectionEnd.y),
-        Math.abs(this.input.selectionEnd.x - this.input.selectionStart.x),
-        Math.abs(this.input.selectionEnd.y - this.input.selectionStart.y),
-        'rgba(255, 255, 255, 0.3)'
+        startX,
+        startY,
+        width,
+        height,
+        'rgba(46, 204, 113, 0.3)'
       );
+      
+      // Зеленая рамка
+      this.renderer.ctx.strokeStyle = '#2ecc71';
+      this.renderer.ctx.lineWidth = 2;
+      this.renderer.ctx.strokeRect(startX, startY, width, height);
     }
     
     // Отрисовка выделенных сущностей
@@ -274,16 +285,25 @@ export class Game {
       this.renderer.canvas.height / 2
     );
     
-    // Визуализируем путь (просто точка назначения)
+    // Визуализируем точку назначения (не перемещаем юнит сразу)
     console.log('Move command to:', worldPos);
     
-    // Здесь будет логика отправки команды юнитам
-    // Для прототипа просто перемещаем первый юнит
-    const firstEntity = Array.from(this._selectedEntities)[0];
-    if (firstEntity) {
-      firstEntity.position.x = Math.floor(worldPos.x);
-      firstEntity.position.y = Math.floor(worldPos.y);
-    }
+    // Добавляем визуальный маркер цели
+    this.renderer.addRenderItem({
+      type: 'default',
+      worldPosition: { 
+        x: Math.floor(worldPos.x), 
+        y: Math.floor(worldPos.y), 
+        z: 0 
+      },
+    });
+    
+    // Здесь будет логика отправки команды юнитам с pathfinding
+    // Для прототипа просто запоминаем цель (но не перемещаем сразу)
+    // const firstEntity = Array.from(this._selectedEntities)[0];
+    // if (firstEntity) {
+    //   firstEntity.targetPosition = { x: worldPos.x, y: worldPos.y };
+    // }
   }
   
   /**
