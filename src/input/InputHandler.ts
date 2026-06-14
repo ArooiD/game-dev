@@ -105,14 +105,14 @@ export class InputHandler {
         }
       });
       
-      // Скролл
-      canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -this.scrollSensitivity : this.scrollSensitivity;
-        if (this.onScroll) {
-          this.onScroll(delta);
-        }
-      }, { passive: false });
+      // Скролл (отключён)
+      // canvas.addEventListener('wheel', (e) => {
+      //   e.preventDefault();
+      //   const delta = e.deltaY > 0 ? -this.scrollSensitivity : this.scrollSensitivity;
+      //   if (this.onScroll) {
+      //     this.onScroll(delta);
+      //   }
+      // }, { passive: false });
       
       // Контекстное меню (отключаем)
       canvas.addEventListener('contextmenu', (e) => {

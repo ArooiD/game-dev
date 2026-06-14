@@ -24,9 +24,9 @@ export class Camera {
   private _targetPosition: Vector2 | null = null;
   private _smoothSpeed: number = 0.1;
   
-  constructor(position: Vector2 = { x: 0, y: 0 }, zoom: number = 1) {
+  constructor(position: Vector2 = { x: 0, y: 0 }) {
     this.position = { ...position };
-    this.zoom = Math.max(0.1, Math.min(3, zoom));
+    this.zoom = 1; // Фиксированный зум 1.0 (отключён)
   }
   
   /**
