@@ -52,6 +52,7 @@ export class BattleScene extends Phaser.Scene {
   private rightDragStart: Phaser.Math.Vector2 | null = null;
   private selectionRect!: Phaser.GameObjects.Rectangle;
   private commandPreview!: Phaser.GameObjects.Graphics;
+  private placementPreview!: Phaser.GameObjects.Graphics;
   private commandLines!: Phaser.GameObjects.Graphics;
   private battalionGraphics!: Phaser.GameObjects.Graphics;
   private topBar!: Phaser.GameObjects.Text;
@@ -76,6 +77,7 @@ export class BattleScene extends Phaser.Scene {
     this.commandLines = this.add.graphics().setDepth(5000);
     this.battalionGraphics = this.add.graphics().setDepth(5001);
     this.commandPreview = this.add.graphics().setDepth(6000);
+    this.placementPreview = this.add.graphics().setDepth(6200);
     this.selectionRect = this.add.rectangle(0, 0, 1, 1, 0x84cc16, 0.15).setStrokeStyle(2, 0xa3e635).setVisible(false).setDepth(9000);
     this.createHud();
 
@@ -95,7 +97,7 @@ export class BattleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-G', () => this.createBattalionFromSelection());
     this.input.keyboard?.on('keydown-U', () => this.ungroupSelectedBattalions());
     this.input.keyboard?.on('keydown-R', () => this.reformSelectedInPlace());
-    this.input.keyboard?.on('keydown-ESC', () => { this.placementKind = null; this.clearSelection(); });
+    this.input.keyboard?.on('keydown-ESC', () => { this.placementKind = null; this.placementPreview.clear(); this.clearSelection(); });
     this.input.keyboard?.on('keydown-H', () => this.beginPlacement('house'));
     this.input.keyboard?.on('keydown-B', () => this.beginPlacement('barracks'));
     this.input.keyboard?.on('keydown-S', () => this.beginPlacement('stable'));
@@ -107,10 +109,11 @@ export class BattleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-A', () => this.trainFromSelectedBuilding('artillery'));
   }
 
-  update(time: number, delta: number): void { this.updateCamera(delta); this.updateConstructionWorkers(); this.updateBuildings(delta); this.updateUnits(this.units, delta); this.updateUnits(this.enemies, delta); this.updateCombat(time); this.renderUnitState(); this.renderBuildingState(); this.renderBattalions(); this.updateHud(); }
+  update(time: number, delta: number): void { this.updateCamera(delta); this.updatePlacementPreview(); this.updateConstructionWorkers(); this.updateBuildings(delta); this.updateUnits(this.units, delta); this.updateUnits(this.enemies, delta); this.updateCombat(time); this.renderUnitState(); this.renderBuildingState(); this.renderBattalions(); this.updateHud(); }
   private createHud(): void { this.topBar = this.add.text(8, 4, '', { fontFamily: 'Georgia, serif', fontSize: '14px', color: '#f5e6b8', backgroundColor: '#2b1c11dd', padding: { x: 10, y: 4 } }).setScrollFactor(0).setDepth(3000); this.bottomPanel = this.add.graphics().setScrollFactor(0).setDepth(2800); this.portraitPanel = new PortraitPanel(this); this.minimap = this.add.graphics().setScrollFactor(0).setDepth(3100); }
   private beginPlacement(kind: BuildingKind): void { if (!canAfford(this.resources, BUILDING_SPECS[kind].cost)) return; this.placementKind = kind; }
-  private placeBuilding(kind: BuildingKind, x: number, y: number): void { const workers = this.units.filter((u) => this.selectedIds.has(u.id) && u.kind === 'worker' && u.constructionTargetId === null); if (workers.length === 0) return; if (!canAfford(this.resources, BUILDING_SPECS[kind].cost) || !canPlaceBuilding(this.buildings, x, y, kind)) return; spendResources(this.resources, BUILDING_SPECS[kind].cost); const assigned = workers.slice(0, Math.min(4, workers.length)); const building = this.createBuilding(x, y, kind, false, assigned.map((u) => u.id)); assigned.forEach((worker, index) => { worker.constructionTargetId = building.id; worker.target = new Phaser.Math.Vector2(x + (index % 2) * 0.35 - 0.2, y + Math.floor(index / 2) * 0.35 + 0.45); }); this.placementKind = null; this.selectBuilding(building); }
+  private placeBuilding(kind: BuildingKind, x: number, y: number): void { const workers = this.units.filter((u) => this.selectedIds.has(u.id) && u.kind === 'worker' && u.constructionTargetId === null); if (workers.length === 0) return; if (!canAfford(this.resources, BUILDING_SPECS[kind].cost) || !canPlaceBuilding(this.buildings, x, y, kind)) return; spendResources(this.resources, BUILDING_SPECS[kind].cost); const assigned = workers.slice(0, Math.min(4, workers.length)); const building = this.createBuilding(x, y, kind, false, assigned.map((u) => u.id)); assigned.forEach((worker, index) => { worker.constructionTargetId = building.id; worker.target = new Phaser.Math.Vector2(x + (index % 2) * 0.35 - 0.2, y + Math.floor(index / 2) * 0.35 + 0.45); }); this.placementKind = null; this.placementPreview.clear(); this.selectBuilding(building); }
+  private updatePlacementPreview(): void { this.placementPreview.clear(); if (!this.placementKind) return; const pointer = this.input.activePointer; const world = this.pointerWorld(pointer); const x = Math.round(world.x * 2) / 2; const y = Math.round(world.y * 2) / 2; const spec = BUILDING_SPECS[this.placementKind]; const workers = this.units.filter((u) => this.selectedIds.has(u.id) && u.kind === 'worker' && u.constructionTargetId === null); const valid = workers.length > 0 && canAfford(this.resources, spec.cost) && canPlaceBuilding(this.buildings, x, y, this.placementKind); const color = valid ? 0x22c55e : 0xef4444; const center = worldToIso(x, y); const top = worldToIso(x, y - 0.75); const right = worldToIso(x + 1.0, y); const bottom = worldToIso(x, y + 0.75); const left = worldToIso(x - 1.0, y); this.placementPreview.fillStyle(color, valid ? 0.18 : 0.22).fillPoints([top, right, bottom, left], true); this.placementPreview.lineStyle(3, color, 0.95).strokePoints([top, right, bottom, left], true); this.placementPreview.lineStyle(1, color, 0.55).strokeRect(center.x - spec.width / 2, center.y - 18 - spec.height / 2, spec.width, spec.height); }
   private createBuilding(x: number, y: number, kind: BuildingKind, completed: boolean, assignedWorkerIds: number[]): Building { const spec = BUILDING_SPECS[kind]; const p = worldToIso(x, y); const sprite = this.add.rectangle(p.x, p.y - 16, spec.width, spec.height, spec.color, completed ? 1 : 0.35).setStrokeStyle(2, 0x111827); const label = this.add.text(p.x, p.y - 42, spec.short, { fontFamily: 'Arial', fontSize: '11px', color: '#f8fafc' }).setOrigin(0.5); const building: Building = { id: this.nextBuildingId++, kind, world: new Phaser.Math.Vector2(x, y), sprite, label, completed, progressMs: completed ? spec.buildTimeMs : 0, buildTimeMs: spec.buildTimeMs, hitpoints: spec.hitpoints, selected: false, assignedWorkerIds, queue: [] }; this.buildings.push(building); if (completed && spec.populationCapBonus) this.resources.populationCap += spec.populationCapBonus; this.syncBuildingSprite(building); return building; }
   private selectBuilding(building: Building): void { this.clearSelection(); this.selectedBuildingId = building.id; this.buildings.forEach((b) => b.selected = b.id === building.id); }
   private trainFromSelectedBuilding(unitKind: UnitKind): void { const building = this.buildings.find((b) => b.id === this.selectedBuildingId); if (!building || !canTrain(building, unitKind) || !canAfford(this.resources, UNIT_COSTS[unitKind]) || this.resources.population >= this.resources.populationCap) return; spendResources(this.resources, UNIT_COSTS[unitKind]); building.queue.push({ id: this.nextOrderId++, unitKind, progressMs: 0, trainTimeMs: UNIT_TRAIN_TIME_MS[unitKind] }); }
