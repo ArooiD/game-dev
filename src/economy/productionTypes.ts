@@ -13,6 +13,7 @@ export type Building = {
   buildTimeMs: number;
   hitpoints: number;
   selected: boolean;
+  assignedWorkerIds: number[];
   queue: ProductionOrder[];
 };
 
