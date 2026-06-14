@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { europeCampaignState } from '../campaign/europeCampaign';
+import { drawStylizedEuropeMap } from '../campaign/europeMapRenderer';
 import type { CampaignArmy, CampaignState, Region } from '../campaign/types';
 
 const OWNER_COLOR = {
@@ -75,24 +76,11 @@ export class CampaignScene extends Phaser.Scene {
 
   private render(): void {
     this.map.clear();
-    this.drawEuropeBackdrop();
+    drawStylizedEuropeMap(this.map);
     this.drawConnections();
     this.drawRegions();
     this.drawArmies();
     this.updateHud();
-  }
-
-  private drawEuropeBackdrop(): void {
-    this.map.fillStyle(0x26394d, 1).fillRect(0, 0, 1100, 720);
-    this.map.fillStyle(0x344f3a, 0.95);
-    this.map.fillEllipse(470, 360, 780, 430);
-    this.map.fillEllipse(780, 315, 510, 330);
-    this.map.fillEllipse(240, 510, 230, 160);
-    this.map.fillEllipse(570, 570, 260, 220);
-    this.map.fillEllipse(580, 130, 300, 180);
-    this.map.fillStyle(0x213247, 1);
-    this.map.fillEllipse(180, 190, 150, 120);
-    this.map.fillEllipse(900, 650, 220, 120);
   }
 
   private drawConnections(): void {
