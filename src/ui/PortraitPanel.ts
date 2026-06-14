@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { BUILDING_SPECS } from '../economy/buildingTypes';
 import type { Building } from '../economy/productionTypes';
 import type { UnitKind } from '../units/unitTypes';
 import type { ActionIconKind, CommandAction } from './actionIcons';
@@ -106,8 +105,13 @@ export class PortraitPanel {
       this.graphics.lineStyle(2, 0x49634c, 1).strokeRect(ax, ay, size, size);
       this.drawActionIcon(ax + size / 2, ay + size / 2, action.icon);
       this.addText(ax + 4, ay + 2, action.hotkey, '10px', '#facc15');
-      const zone = this.scene.add.zone(ax, ay, size, size).setOrigin(0).setScrollFactor(0).setDepth(3600).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => { event.stopPropagation(); onAction?.(action); });
+      const zone = this.scene.add.zone(ax, ay, size, size)
+        .setOrigin(0)
+        .setScrollFactor(0)
+        .setDepth(20000)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); onAction?.(action); });
+      zone.on('pointerup', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); });
       this.zones.push(zone);
     });
   }
