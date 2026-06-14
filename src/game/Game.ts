@@ -282,25 +282,21 @@ export class Game {
       this.renderer.canvas.height / 2
     );
     
-    // Визуализируем точку назначения (не перемещаем юнит сразу)
-    console.log('Move command to:', worldPos);
+    const targetX = Math.floor(worldPos.x);
+    const targetY = Math.floor(worldPos.y);
     
-    // Добавляем визуальный маркер цели
+    // Отправляем команду всем выделенным юнитам
+    for (const unit of this._selectedEntities) {
+      unit.moveTo(targetX, targetY);
+    }
+    
+    // Визуализируем точку назначения
     this.renderer.addRenderItem({
       type: 'default',
-      worldPosition: { 
-        x: Math.floor(worldPos.x), 
-        y: Math.floor(worldPos.y), 
-        z: 0 
-      },
+      worldPosition: { x: targetX, y: targetY, z: 0 },
     });
     
-    // Здесь будет логика отправки команды юнитам с pathfinding
-    // Для прототипа просто запоминаем цель (но не перемещаем сразу)
-    // const firstEntity = Array.from(this._selectedEntities)[0];
-    // if (firstEntity) {
-    //   firstEntity.targetPosition = { x: worldPos.x, y: worldPos.y };
-    // }
+    console.log('Move command to:', targetX, targetY, 'units:', this._selectedEntities.size);
   }
   
   /**

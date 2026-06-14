@@ -10,6 +10,10 @@ export class Unit extends Entity {
   stats: UnitStats;
   team: string;
   
+  // Целевая позиция для движения
+  targetPosition: WorldPosition | null = null;
+  moveSpeed: number = 3; // единиц в секунду
+  
   constructor(
     id: string,
     unitType: UnitType,
@@ -22,6 +26,7 @@ export class Unit extends Entity {
     this.unitType = unitType;
     this.team = team;
     this.stats = this._getDefaultStats(unitType);
+    this.moveSpeed = this.stats.moveSpeed;
   }
   
   /**
@@ -150,5 +155,39 @@ export class Unit extends Entity {
         this.stats.stamina + deltaTime * 5
       );
     }
+    
+    // Обработка движения к цели
+    if (this.targetPosition) {
+      const dx = this.targetPosition.x - this.position.x;
+      const dy = this.targetPosition.y - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance > 0.1) {
+        // Двигаемся к цели
+        const moveDistance = this.moveSpeed * deltaTime;
+        const moveX = (dx / distance) * Math.min(moveDistance, distance);
+        const moveY = (dy / distance) * Math.min(moveDistance, distance);
+        
+        this.position.x += moveX;
+        this.position.y += moveY;
+      } else {
+        // Достигли цели
+        this.targetPosition = null;
+      }
+    }
+  }
+  
+  /**
+   * Устанавливает цель движения
+   */
+  moveTo(x: number, y: number): void {
+    this.targetPosition = { x, y, z: 0 };
+  }
+  
+  /**
+   * Отменяет движение
+   */
+  stop(): void {
+    this.targetPosition = null;
   }
 }
