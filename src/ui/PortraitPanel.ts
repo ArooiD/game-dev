@@ -29,14 +29,10 @@ export class PortraitPanel {
   private graphics: Phaser.GameObjects.Graphics;
   private texts: Phaser.GameObjects.Text[] = [];
   private zones: Phaser.GameObjects.Zone[] = [];
-  private tooltipGraphics: Phaser.GameObjects.Graphics;
-  private tooltipTexts: Phaser.GameObjects.Text[] = [];
   private hoveredAction: CommandAction | null = null;
-  private hoveredPointer = new Phaser.Math.Vector2(0, 0);
 
   constructor(private scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(3300);
-    this.tooltipGraphics = scene.add.graphics().setScrollFactor(0).setDepth(21000);
   }
 
   render(x: number, y: number, state: PortraitPanelState): void {
@@ -44,14 +40,13 @@ export class PortraitPanel {
     this.graphics.clear();
     this.clearTexts();
     this.clearZones();
-    this.clearTooltipGraphics();
     this.graphics.fillStyle(0x120b07, 0.96).fillRoundedRect(x, y, 620, 136, 10);
     this.graphics.lineStyle(3, 0x8b6f3e, 1).strokeRoundedRect(x, y, 620, 136, 10);
 
     if (state.portraits.length === 0) {
       this.renderEmpty(x, y, state.placementLabel);
       this.renderActions(x + 314, y + 18, actions, state.onAction);
-      this.renderHoveredTooltip();
+      this.renderActionInfo(x + 468, y + 18, state.placementLabel);
       return;
     }
 
@@ -62,8 +57,19 @@ export class PortraitPanel {
     }
 
     this.renderActions(x + 314, y + 18, actions, state.onAction);
-    this.addText(x + 500, y + 24, state.placementLabel ? `Размещение:\n${state.placementLabel}` : 'Иконки\nкоманд', '13px', '#facc15');
-    this.renderHoveredTooltip();
+    this.renderActionInfo(x + 468, y + 18, state.placementLabel);
+  }
+
+  private renderActionInfo(x: number, y: number, placementLabel: string | null): void {
+    this.graphics.fillStyle(0x08090d, 0.9).fillRoundedRect(x, y, 138, 100, 8);
+    this.graphics.lineStyle(1, 0x49634c, 0.8).strokeRoundedRect(x, y, 138, 100, 8);
+    if (this.hoveredAction) {
+      this.addText(x + 8, y + 8, `${this.hoveredAction.label} (${this.hoveredAction.hotkey})`, '13px', '#f5e6b8');
+      this.addText(x + 8, y + 30, this.hoveredAction.description, '11px', '#cbd5e1', 0, 122);
+      return;
+    }
+    this.addText(x + 8, y + 8, 'Наведи на иконку', '12px', '#f5e6b8');
+    this.addText(x + 8, y + 30, placementLabel ? `Сейчас: ${placementLabel}` : 'Здесь появится описание команды и горячая клавиша.', '11px', '#94a3b8', 0, 122);
   }
 
   private renderEmpty(x: number, y: number, placementLabel: string | null): void {
@@ -114,28 +120,13 @@ export class PortraitPanel {
       this.drawActionIcon(ax + size / 2, ay + size / 2, action.icon);
       this.addText(ax + 4, ay + 2, action.hotkey, '10px', '#facc15');
       const zone = this.scene.add.zone(ax, ay, size, size).setOrigin(0).setScrollFactor(0).setDepth(20000).setInteractive({ useHandCursor: true });
-      const hover = (pointer: Phaser.Input.Pointer, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); this.hoveredAction = action; this.hoveredPointer.set(pointer.x, pointer.y); this.renderHoveredTooltip(); };
-      zone.on('pointerover', (pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => hover(pointer, event));
-      zone.on('pointermove', (pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => hover(pointer, event));
-      zone.on('pointerout', () => { this.hoveredAction = null; this.clearTooltipGraphics(); });
+      zone.on('pointerover', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); this.hoveredAction = action; });
+      zone.on('pointermove', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); this.hoveredAction = action; });
+      zone.on('pointerout', () => { this.hoveredAction = null; });
       zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); onAction?.(action); });
       zone.on('pointerup', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event?: Phaser.Types.Input.EventData) => { event?.stopPropagation(); });
       this.zones.push(zone);
     });
-  }
-
-  private renderHoveredTooltip(): void {
-    this.clearTooltipGraphics();
-    if (!this.hoveredAction) return;
-    const action = this.hoveredAction;
-    const width = 270;
-    const height = 76;
-    const x = Math.min(this.hoveredPointer.x + 14, this.scene.scale.width - width - 10);
-    const y = Math.max(10, this.hoveredPointer.y - height - 12);
-    this.tooltipGraphics.fillStyle(0x090b10, 0.97).fillRoundedRect(x, y, width, height, 8);
-    this.tooltipGraphics.lineStyle(2, 0xd6b86a, 1).strokeRoundedRect(x, y, width, height, 8);
-    this.tooltipTexts.push(this.scene.add.text(x + 10, y + 8, `${action.label} (${action.hotkey})`, { fontFamily: 'Arial', fontSize: '14px', color: '#f5e6b8' }).setScrollFactor(0).setDepth(21001));
-    this.tooltipTexts.push(this.scene.add.text(x + 10, y + 32, action.description, { fontFamily: 'Arial', fontSize: '12px', color: '#cbd5e1', wordWrap: { width: width - 20 } }).setScrollFactor(0).setDepth(21001));
   }
 
   private drawActionIcon(x: number, y: number, icon: ActionIconKind): void {
@@ -185,13 +176,14 @@ export class PortraitPanel {
     this.graphics.fillStyle(color, 1).fillRect(x, y, Math.max(0, Math.min(1, value)) * width, height);
   }
 
-  private addText(x: number, y: number, text: string, fontSize: string, color: string, originX = 0): void {
-    const item = this.scene.add.text(x, y, text, { fontFamily: 'Arial', fontSize, color }).setScrollFactor(0).setDepth(3400);
+  private addText(x: number, y: number, text: string, fontSize: string, color: string, originX = 0, wrapWidth?: number): void {
+    const style: Phaser.Types.GameObjects.Text.TextStyle = { fontFamily: 'Arial', fontSize, color };
+    if (wrapWidth) style.wordWrap = { width: wrapWidth };
+    const item = this.scene.add.text(x, y, text, style).setScrollFactor(0).setDepth(3400);
     item.setOrigin(originX, 0);
     this.texts.push(item);
   }
 
   private clearTexts(): void { this.texts.forEach((text) => text.destroy()); this.texts = []; }
   private clearZones(): void { this.zones.forEach((zone) => zone.destroy()); this.zones = []; }
-  private clearTooltipGraphics(): void { this.tooltipGraphics.clear(); this.tooltipTexts.forEach((text) => text.destroy()); this.tooltipTexts = []; }
 }
