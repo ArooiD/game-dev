@@ -169,13 +169,18 @@ export class Renderer {
     const path = item.path || item.pathPoints;
     if (!path || path.length < 2) return;
     
-    const firstPoint = path[0];
-    const firstScreen = IsoUtils.worldToScreen(
-      { x: firstPoint.x, y: firstPoint.y, z: 0 },
-      this.camera.position,
-      this._centerX,
-      this._centerY
-    );
+    // Преобразуем все точки пути в экранные координаты
+    const screenPoints: { x: number; y: number }[] = [];
+    
+    for (const point of path) {
+      const screen = IsoUtils.worldToScreen(
+        { x: point.x, y: point.y, z: 0 },
+        this.camera.position,
+        this._centerX,
+        this._centerY
+      );
+      screenPoints.push(screen);
+    }
     
     // Рисуем линию пути
     this.ctx.strokeStyle = 'rgba(241, 196, 15, 0.6)'; // Полупрозрачный жёлтый
@@ -183,38 +188,40 @@ export class Renderer {
     this.ctx.setLineDash([8, 4]);
     
     this.ctx.beginPath();
-    this.ctx.moveTo(firstScreen.x, firstScreen.y);
+    this.ctx.moveTo(screenPoints[0].x, screenPoints[0].y);
     
-    for (let i = 1; i < path.length; i++) {
-      const point = path[i];
-      const screen = IsoUtils.worldToScreen(
-        { x: point.x, y: point.y, z: 0 },
-        this.camera.position,
-        this._centerX,
-        this._centerY
-      );
-      this.ctx.lineTo(screen.x, screen.y);
+    for (let i = 1; i < screenPoints.length; i++) {
+      this.ctx.lineTo(screenPoints[i].x, screenPoints[i].y);
     }
     
     this.ctx.stroke();
     this.ctx.setLineDash([]);
     
     // Рисуем точки пути
-    for (let i = 0; i < path.length; i++) {
-      const point = path[i];
-      const screen = IsoUtils.worldToScreen(
-        { x: point.x, y: point.y, z: 0 },
-        this.camera.position,
-        this._centerX,
-        this._centerY
+    for (let i = 0; i < screenPoints.length; i++) {
+      const screen = screenPoints[i];
+      
+      // Проверяем, находится ли точка на экране (с запасом)
+      const onScreen = (
+        screen.x >= -100 && 
+        screen.x <= this._width + 100 && 
+        screen.y >= -100 && 
+        screen.y <= this._height + 100
       );
+      
+      if (!onScreen) continue;
       
       // Точка пути
       const dotSize = 4 * this.camera.zoom;
-      this.ctx.fillStyle = i === path.length - 1 ? '#e74c3c' : '#f1c40f'; // Красная последняя точка
+      this.ctx.fillStyle = i === screenPoints.length - 1 ? '#e74c3c' : '#f1c40f'; // Красная последняя точка
       this.ctx.beginPath();
       this.ctx.arc(screen.x, screen.y, dotSize, 0, Math.PI * 2);
       this.ctx.fill();
+      
+      // Добавляем обводку для лучшей видимости
+      this.ctx.strokeStyle = '#fff';
+      this.ctx.lineWidth = 1;
+      this.ctx.stroke();
     }
   }
   
