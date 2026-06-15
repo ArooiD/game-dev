@@ -1,4 +1,5 @@
 export type CommandActionId =
+  | 'build_town_center'
   | 'build_house'
   | 'build_barracks'
   | 'build_stable'
@@ -14,7 +15,7 @@ export type CommandActionId =
   | 'train_cavalry'
   | 'train_artillery';
 
-export type ActionIconKind = 'hammer' | 'house' | 'barracks' | 'stable' | 'foundry' | 'repair' | 'gather' | 'stop' | 'attack' | 'hold' | 'worker' | 'soldier' | 'specialist' | 'cavalry' | 'artillery';
+export type ActionIconKind = 'hammer' | 'town_center' | 'house' | 'barracks' | 'stable' | 'foundry' | 'repair' | 'gather' | 'stop' | 'attack' | 'hold' | 'worker' | 'soldier' | 'specialist' | 'cavalry' | 'artillery';
 
 export type CommandAction = {
   id: CommandActionId;
@@ -25,6 +26,7 @@ export type CommandAction = {
 };
 
 export const WORKER_ACTIONS: CommandAction[] = [
+  { id: 'build_town_center', label: 'Ратуша', hotkey: 'T', icon: 'town_center', description: 'Построить ратушу. Даёт лимит населения и производит рабочих.' },
   { id: 'build_house', label: 'Дом', hotkey: 'H', icon: 'house', description: 'Построить дом. Увеличивает лимит населения.' },
   { id: 'build_barracks', label: 'Казармы', hotkey: 'B', icon: 'barracks', description: 'Построить казармы. Открывают производство воинов и специалистов.' },
   { id: 'build_stable', label: 'Конюшня', hotkey: 'S', icon: 'stable', description: 'Построить конюшню. Производит кавалерию.' },
