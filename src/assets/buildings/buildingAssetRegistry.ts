@@ -1,5 +1,5 @@
 import type { BuildingKind } from '../../economy/buildingTypes';
-import type { BuildingAssetPack, BuildingCountry, BuildingAssetStage } from './buildingAssetTypes';
+import type { BuildingAssetLayer, BuildingAssetPack, BuildingCountry, BuildingAssetStage } from './buildingAssetTypes';
 
 const STAGE_BREAKS: Array<[BuildingAssetStage['id'], number, number]> = [
   ['construction_0', 0, 0.25],
@@ -9,14 +9,23 @@ const STAGE_BREAKS: Array<[BuildingAssetStage['id'], number, number]> = [
   ['complete', 1, 1],
 ];
 
-function makePrimitiveLayers(kind: BuildingKind, stage: BuildingAssetStage['id']) {
+const AVAILABLE_SOURCE_ASSETS = new Set([
+  'russia/town_center/complete/base.svg',
+  'russia/house/complete/base.svg',
+]);
+
+function makeLayers(kind: BuildingKind, stage: BuildingAssetStage['id']): BuildingAssetLayer[] {
   const base = `russia/${kind}/${stage}`;
-  return [
-    { name: 'shadow', source: `${base}/shadow.svg`, format: 'svg' as const, depthOffset: -4, occludable: false, alphaMode: 'always' as const },
-    { name: 'base', source: `${base}/base.svg`, format: 'svg' as const, depthOffset: 0, occludable: true, alphaMode: 'occludable' as const },
-    { name: 'roof', source: `${base}/roof.svg`, format: 'svg' as const, depthOffset: 2, occludable: true, alphaMode: 'occludable' as const },
-    { name: 'details', source: `${base}/details.svg`, format: 'svg' as const, depthOffset: 3, occludable: true, alphaMode: 'occludable' as const },
+  const layers: BuildingAssetLayer[] = [
+    { name: 'shadow', source: `${base}/shadow.svg`, format: 'svg', depthOffset: -4, occludable: false, alphaMode: 'always' },
+    { name: 'base', source: `${base}/base.svg`, format: 'svg', depthOffset: 0, occludable: true, alphaMode: 'occludable' },
+    { name: 'roof', source: `${base}/roof.svg`, format: 'svg', depthOffset: 2, occludable: true, alphaMode: 'occludable' },
+    { name: 'details', source: `${base}/details.svg`, format: 'svg', depthOffset: 3, occludable: true, alphaMode: 'occludable' },
   ];
+  return layers.map((layer) => ({
+    ...layer,
+    runtimeTexture: AVAILABLE_SOURCE_ASSETS.has(layer.source) ? layer.source : undefined,
+  }));
 }
 
 function makePack(country: BuildingCountry, kind: BuildingKind, footprint: { w: number; h: number }, hitbox: { w: number; h: number; offsetX: number; offsetY: number }): BuildingAssetPack {
@@ -29,9 +38,9 @@ function makePack(country: BuildingCountry, kind: BuildingKind, footprint: { w: 
     hitbox,
     occlusion: { enabled: true, fadeAlpha: 0.35, fadeDistance: 1.25 },
     stages: [
-      ...STAGE_BREAKS.map(([id, fromProgress, toProgress]) => ({ id, fromProgress, toProgress, layers: makePrimitiveLayers(kind, id) })),
-      { id: 'damaged', fromProgress: 1, toProgress: 1, layers: makePrimitiveLayers(kind, 'damaged') },
-      { id: 'ruins', fromProgress: 1, toProgress: 1, layers: makePrimitiveLayers(kind, 'ruins') },
+      ...STAGE_BREAKS.map(([id, fromProgress, toProgress]) => ({ id, fromProgress, toProgress, layers: makeLayers(kind, id) })),
+      { id: 'damaged', fromProgress: 1, toProgress: 1, layers: makeLayers(kind, 'damaged') },
+      { id: 'ruins', fromProgress: 1, toProgress: 1, layers: makeLayers(kind, 'ruins') },
     ],
   };
 }
