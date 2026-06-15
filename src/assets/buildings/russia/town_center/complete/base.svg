@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="190" viewBox="0 0 220 190">
+  <g transform="translate(110 120) skewX(-16)">
+    <polygon points="-82,25 0,50 86,24 0,-2" fill="#000000" opacity="0.18"/>
+    <polygon points="-72,-28 62,-28 62,26 -72,26" fill="#9b734d" stroke="#20140d" stroke-width="2"/>
+    <polygon points="62,-28 84,-16 84,34 62,26" fill="#7f5c3e" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-72,-28 -90,-16 -90,34 -72,26" fill="#6f4f35" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-84,-31 -12,-57 76,-31 90,-13 -92,-13" fill="#2b2018" stroke="#20140d" stroke-width="2"/>
+    <polygon points="76,-31 90,-13 80,2 62,-13" fill="#1e1712" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-84,-31 -92,-13 -82,2 -68,-13" fill="#1e1712" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-20,-78 24,-78 24,28 -20,28" fill="#9b734d" stroke="#20140d" stroke-width="2"/>
+    <polygon points="24,-78 42,-68 42,33 24,28" fill="#7f5c3e" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-31,-83 2,-105 36,-83 26,-68 -24,-68" fill="#2b2018" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-14,-128 14,-128 14,-89 -14,-89" fill="#6f4f35" stroke="#20140d" stroke-width="2"/>
+    <polygon points="14,-128 28,-119 28,-83 14,-89" fill="#7f5c3e" stroke="#20140d" stroke-width="2"/>
+    <polygon points="-20,-134 0,-154 22,-134 16,-124 -16,-124" fill="#2b2018" stroke="#20140d" stroke-width="2"/>
+    <rect x="-3" y="-164" width="5" height="24" fill="#d7b56d"/>
+    <g fill="#101820" stroke="#d7b56d" stroke-width="1">
+      <rect x="-58" y="-13" width="8" height="13"/><rect x="-38" y="-13" width="8" height="13"/><rect x="-18" y="-13" width="8" height="13"/>
+      <rect x="16" y="-13" width="8" height="13"/><rect x="36" y="-13" width="8" height="13"/><rect x="56" y="-13" width="8" height="13"/>
+      <rect x="-58" y="8" width="8" height="12"/><rect x="-38" y="8" width="8" height="12"/><rect x="-18" y="8" width="8" height="12"/>
+      <rect x="16" y="8" width="8" height="12"/><rect x="36" y="8" width="8" height="12"/><rect x="56" y="8" width="8" height="12"/>
+      <rect x="-10" y="-55" width="8" height="13"/><rect x="8" y="-55" width="8" height="13"/>
+      <rect x="-6" y="-116" width="10" height="18"/>
+    </g>
+    <rect x="-8" y="8" width="17" height="26" fill="#0b0806" stroke="#d7b56d" stroke-width="2"/>
+    <polygon points="-10,8 0,-4 11,8" fill="#0b0806" stroke="#d7b56d" stroke-width="2"/>
+  </g>
+</svg>
