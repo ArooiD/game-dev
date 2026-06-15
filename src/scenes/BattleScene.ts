@@ -1,3 +1,37 @@
+/**
+ * BattleScene — основной игровой экран тактической битвы.
+ * 
+ * ⚠️ ВНИМАНИЕ ДЛЯ AI-АГЕНТОВ:
+ * 
+ * Этот файл стал большим и сжатым для скорости разработки.
+ * 
+ * ПРАВИЛА ПРИ ИЗМЕНЕНИЯХ:
+ * 1. НЕ делать рефакторинг без явного запроса пользователя
+ * 2. НЕ удалять существующий функционал (формации, батальоны, combat, minimap)
+ * 3. ВСЕГДА проверять текущий код перед внесением изменений
+ * 4. Делать маленькие, изолированные коммиты
+ * 5. Использовать asset registry для зданий, НЕ хардкодить арт!
+ * 
+ * КРИТИЧНЫЕ ЗОНЫ:
+ * - Система зданий: использовать syncBuildingVisuals(), НЕ forEach()
+ * - Формации: hotkeys и поведение могут быть в сжатом виде
+ * - Батальоны: рендеринг может быть упрощён
+ * - Combat: логика боя может быть в одной функции
+ * - Minimap: может быть упрощён
+ * 
+ * ССЫЛКИ:
+ * - @see CONTEXT.md — общий контекст проекта
+ * - @see AGENTS.md — расширенный контекст для OpenHands
+ * - @see docs/DECISIONS.md — архитектурные решения
+ * - @see src/world/buildingRenderer.ts — рендеринг зданий
+ * - @see src/assets/buildings/buildingAssetRegistry.ts — регистр ассетов
+ * 
+ * БУДУЩИЕ РЕФАКТОРИНГИ (по запросу):
+ * - Разделить на модули: selection, buildingPlacement, construction, combat, hud, minimap
+ * - Вынести логику в отдельные системы
+ * - Добавить unit tests
+ */
+
 import Phaser from 'phaser';
 import { drawIsoTerrain } from '../world/isoTerrain';
 import { isoDepth, isoToWorld, worldToIso } from '../world/iso';
