@@ -38,7 +38,7 @@ type ShapeSpec = {
  * - Все части здания — дети этого root
  * - Не двигайте части независимо! Используйте root.setPosition()
  * 
- * @see CONTEXT.md#система-зданий
+ * @see .agents/CONTEXT.md#система-зданий
  * @see AGENTS.md#building-renderer
  * 
  * @example
@@ -95,7 +95,7 @@ export function createBuildingVisuals(
  * - Всегда присваивайте результат: building.visuals = rebuildBuildingVisuals(...)
  * - Сохраняет country и kind из текущего состояния
  * 
- * @see CONTEXT.md#система-зданий
+ * @see .agents/CONTEXT.md#система-зданий
  * 
  * @param current - Текущий BuildingVisualSet
  * @param scene - Phaser сцена
@@ -257,9 +257,9 @@ function createRubble(scene: Phaser.Scene, root: Phaser.GameObjects.Container, i
  * - ВСЕГДА присваивайте результат: building.visuals = syncBuildingVisuals(...)
  * - НЕ используйте building.visuals.forEach(...) — это вызовет ошибку!
  * 
- * @see CONTEXT.md#система-зданий
+ * @see .agents/CONTEXT.md#система-зданий
  * @see AGENTS.md#building-renderer
- * @see ADR-002 в docs/DECISIONS.md
+ * @see ADR-002 в .agents/docs/DECISIONS.md
  * 
  * @example
  * ```typescript

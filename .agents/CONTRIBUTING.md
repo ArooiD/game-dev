@@ -29,7 +29,7 @@ git checkout -b bugfix/fix-issue-name
 
 ### 2. Внесите изменения
 
-- Следуйте правилам из `CONTEXT.md`
+- Следуйте правилам из `.agents/CONTEXT.md`
 - Не хардкодьте арт в код
 - Используйте asset registry для зданий
 
@@ -67,7 +67,7 @@ git push -u origin feature/your-feature-name
 
 ### Для AI-агентов
 
-1. **Читайте `CONTEXT.md` перед началом работы**
+1. **Читайте `.agents/CONTEXT.md` перед началом работы**
 2. **Не меняйте `BattleScene.ts` без явного запроса**
 3. **Используйте `BuildingVisualSet` для зданий**
 4. **Не добавляйте хардкод-арт в код**
@@ -251,9 +251,9 @@ function calculateDamage(stats: UnitStats): number {
 
 ## 📚 Ресурсы
 
-- [CONTEXT.md](../CONTEXT.md) — основной контекст проекта
+- [.agents/CONTEXT.md](../.agents/CONTEXT.md) — основной контекст проекта
 - [AGENTS.md](../AGENTS.md) — расширенный контекст для AI
-- [docs/DECISIONS.md](./DECISIONS.md) — архитектурные решения
+- [.agents/docs/DECISIONS.md](./DECISIONS.md) — архитектурные решения
 - [docs/roadmap.md](./roadmap.md) — план разработки
 - [README.md](../README.md) — общее описание
 

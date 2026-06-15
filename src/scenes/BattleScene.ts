@@ -20,9 +20,9 @@
  * - Minimap: может быть упрощён
  * 
  * ССЫЛКИ:
- * - @see CONTEXT.md — общий контекст проекта
+ * - @see .agents/CONTEXT.md — общий контекст проекта
  * - @see AGENTS.md — расширенный контекст для OpenHands
- * - @see docs/DECISIONS.md — архитектурные решения
+ * - @see .agents/docs/DECISIONS.md — архитектурные решения
  * - @see src/world/buildingRenderer.ts — рендеринг зданий
  * - @see src/assets/buildings/buildingAssetRegistry.ts — регистр ассетов
  * 
