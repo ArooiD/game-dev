@@ -1,6 +1,18 @@
 # AGENTS.md
 
-This file is the shared context for AI coding agents working in this repository.
+> 📚 **ВНИМАНИЕ:** Для полной документации см. [`.agents/README.md`](./.agents/README.md)
+> 
+> Этот файл содержит краткий контекст для OpenHands. Расширенная документация находится в `.agents/`.
+
+---
+
+## 🚀 Быстрый старт
+
+1. **Новые AI-агенты:** начните с [`.agents/CONTEXT.md`](./.agents/CONTEXT.md)
+2. **Архитектурные решения:** [`.agents/docs/DECISIONS.md`](./.agents/docs/DECISIONS.md)
+3. **Правила вклада:** [`.agents/CONTRIBUTING.md`](./.agents/CONTRIBUTING.md)
+
+---
 
 ## Project
 
