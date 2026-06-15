@@ -1,0 +1,10 @@
+{
+  "id": "russia.barracks",
+  "kind": "barracks",
+  "country": "russia",
+  "anchor": { "x": 0.5, "y": 0.82 },
+  "footprint": { "w": 3, "h": 2 },
+  "hitbox": { "w": 66, "h": 52, "offsetX": 0, "offsetY": -30 },
+  "occlusion": { "enabled": true, "fadeAlpha": 0.35, "fadeDistance": 1.25 },
+  "stages": ["construction_0", "construction_1", "construction_2", "construction_3", "complete", "damaged", "ruins"]
+}
