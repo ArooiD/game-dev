@@ -8,6 +8,7 @@ export type Building = {
   world: Phaser.Math.Vector2;
   sprite: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
+  visuals: Phaser.GameObjects.GameObject[];
   completed: boolean;
   progressMs: number;
   buildTimeMs: number;
