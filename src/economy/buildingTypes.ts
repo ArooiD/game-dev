@@ -19,7 +19,7 @@ export type BuildingSpec = {
 };
 
 export const BUILDING_SPECS: Record<BuildingKind, BuildingSpec> = {
-  town_center: { label: 'Ратуша', short: 'TC', color: 0x8b5e34, width: 64, height: 48, buildTimeMs: 9000, hitpoints: 1800, cost: { wood: 250, iron: 80, gold: 80 }, populationCapBonus: 20, trains: ['worker'] },
+  town_center: { label: 'Ратуша', short: 'TC', color: 0x8b5e34, width: 138, height: 88, buildTimeMs: 9000, hitpoints: 1800, cost: { wood: 250, iron: 80, gold: 80 }, populationCapBonus: 20, trains: ['worker'] },
   house: { label: 'Дом', short: 'H', color: 0x7c4a25, width: 38, height: 30, buildTimeMs: 3500, hitpoints: 500, cost: { wood: 70 }, populationCapBonus: 10, trains: [] },
   barracks: { label: 'Казармы', short: 'B', color: 0x6b4f2a, width: 58, height: 42, buildTimeMs: 7000, hitpoints: 1200, cost: { wood: 180, iron: 120 }, trains: ['soldier', 'specialist'] },
   stable: { label: 'Конюшня', short: 'S', color: 0x7a542e, width: 62, height: 42, buildTimeMs: 7500, hitpoints: 1100, cost: { wood: 170, food: 120, gold: 60 }, trains: ['cavalry'] },
